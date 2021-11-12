@@ -1,7 +1,7 @@
 # mantle-shipstation
 ShipStation shipping gateway integration 
 
-###How to setup
+### How to setup
 
 - clone moqui-framework
 `git clone https://github.com/moqui/moqui-framework.git`
