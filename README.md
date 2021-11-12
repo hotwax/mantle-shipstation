@@ -21,5 +21,8 @@ ShipStation shipping gateway integration
 - clone oms
 `git clone https://github.com/hotwax/oms.git`
 
+- clone shipstation
+`git clone https://github.com/hotwax/mantle-shipstation.git`
+
 - Use following command to load data
 `./gradlew load`
