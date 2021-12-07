@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<moqui-conf xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/moqui-conf-2.1.xsd">
-    <screen-facade>
-        <screen location="component://webroot/screen/webroot/apps.xml">
-            <subscreens-item name="shipstation" menu-title="Shipstationtemplate" menu-index="99" location="component://mantle-shipstation/screen/Shipstationtemplate.xml"/>
-        </screen>
-    </screen-facade>
-</moqui-conf>

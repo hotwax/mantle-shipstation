@@ -1,3 +1,4 @@
+<Orders>
 <#list orderParts as part><#assign items = part.item_details><#assign shipping = part.shipping_details>
   <Order>
     <OrderID><![CDATA[${part.orderId!}]]></OrderID>
@@ -62,3 +63,4 @@
 
   </Order>
  </#list>
+ </Orders>

@@ -2,7 +2,7 @@
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
 
     <!--set#GetCall Service gets data from oms find#Orders service and modify the data for Orders.xml screen-->
-    <service verb="get" noun="OrdersInfo">
+    <service verb="prepare" noun="ShipStationOrderData">
         <in-parameters>
             <parameter name="statusId"/>
             <parameter name="start_date" type="Timestamp" format="yyyy-MM-dd">
@@ -65,7 +65,7 @@
         </in-parameters>
         <actions>
             <script><![CDATA[
-                def bodyRender = ec.screen.makeRender().rootScreen("component://mantle-shipstation/screen/Orders.xml").webappName("webroot").renderMode("xml")
+                def bodyRender = ec.screen.makeRender().rootScreen("component://mantle-shipstation/screen/Orders.xml").webappName("webroot").renderMode("html")
 
                 String bodytxt = bodyRender.render()
                 def response = ec.web.getResponse();
