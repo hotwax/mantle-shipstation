@@ -2,7 +2,7 @@
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
 
     <!--set#GetCall Service gets data from oms find#Orders service and modify the data for Orders.xml screen-->
-    <service verb="set" noun="GetCall">
+    <service verb="get" noun="OrdersInfo">
         <in-parameters>
             <parameter name="statusId"/>
             <parameter name="start_date" type="Timestamp" format="yyyy-MM-dd">
@@ -54,7 +54,7 @@
     </service>
 
     <!--get#Data Service for getting XML data from screen-->
-    <service verb="get" noun="Data">
+    <service verb="get" noun="OrderData">
         <in-parameters>
             <parameter name="start_date" type="Timestamp" format="yyyy-MM-dd">
                 <description>Find orders placed at or after this date.</description>
@@ -66,19 +66,14 @@
         <actions>
             <script><![CDATA[
                 def bodyRender = ec.screen.makeRender().rootScreen("component://mantle-shipstation/screen/Orders.xml").webappName("webroot").renderMode("xml")
-                String bodytxt = bodyRender.render()
-                System.out.println("====bodytxt====="+bodytxt+"==========")
-                System.out.println("====response====="+ec.web.getResponse()+"==========")
 
+                String bodytxt = bodyRender.render()
                 def response = ec.web.getResponse();
                 response.setContentType("application/xml")
                 Writer w = response.getWriter()
-                System.out.println("========="+w+"==========")
-                //w.write(bodytxt)
                 w.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>")
                 w.write(bodytxt)
                 w.flush()
-                System.out.println("========="+ec.web.getResponse()+"==========")
             ]]>
             </script>
         </actions>
