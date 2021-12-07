@@ -3,13 +3,8 @@
     <parameter name="start_date"/>
     <parameter name="end_date"/>
     <actions>
-
         <service-call name="mantle.shipstation.ShipStationServices.set#GetCall" in-map="[statusId:'OrderApproved',start_date:start_date,end_date:end_date]" out-map="context"/>
-        <log message="=====context is===${context.orderParts}========"/>
         <set field="orderParts" from="context.orderParts" type="List"/>
-        <!--        <log message="=====orders===${orders}========"/>-->
-        <!--        <set field="orders" from="context?.responseMap" type="NewMap"/>-->
-        <!--        <set field="orderPart" from="context?.responseMap?.orders.order_parts"/>-->
     </actions>
     <widgets>
         <render-mode>

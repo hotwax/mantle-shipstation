@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
+
+    <!--set#GetCall Service gets data from oms find#Orders service and modify the data for Orders.xml screen-->
     <service verb="set" noun="GetCall">
         <in-parameters>
             <parameter name="statusId"/>
@@ -14,23 +16,11 @@
             <parameter name="orderParts"/>
         </out-parameters>
         <actions>
-            <set field="requestMap" from="placedDateStart:start_date,
-                                    placedDateEnd:end_date,statusId:statusId" type="NewMap"/>
-            <log message="requestMap in SS: ${requestMap}"/>
-            <log message="==============IN PARAMETERS: start_date: ${start_date}, end_date: ${end_date}, statusId: ${statusId}=============="/>
+            <set field="requestMap" from="placedDateStart:start_date, placedDateEnd:end_date, statusId:statusId" type="NewMap"/>
             <set field="orderParts" from="[]"/>
             <service-call name="co.hotwax.oms.OrderServices.find#Orders" in-map="requestMap" out-map="responseMap"/>
-
-            <!--<script><![CDATA[
-                System.out.println("====EC: "+ec.web.getParameters()+"======")
-                ]]>
-            </script>-->
-            <log message="=====responseMap:======= ${responseMap.orders}====="/>
             <iterate list="responseMap.orders" entry="order">
                 <iterate list="order.order_parts" entry="order_part">
-<!--                    <service-call name="mantle.order.OrderInfoServices.get#OrderDisplayInfo" in-map="[orderId:order.orderId]" out-map="OrderInfo"/>-->
-<!--                    <log message="=======orderInfo=========${OrderInfo.orderPartInfoList.}======="/>-->
-
                     <entity-find entity-name="mantle.account.payment.Payment" list="paymentList">
                         <econdition field-name="orderId" from="order.orderId"/>
                         <econdition field-name="orderPartSeqId"  from="order_part.id" or-null="true"/>
@@ -40,14 +30,6 @@
                             <econdition field-name="paymentMethodId" operator="in" from="paymentList*.paymentMethodId"/>
                         </entity-find>
                     </if>
-                    <!--<entity-find entity-name="mantle.product.feature.ProductAndFeatureAndFeatureAppl" list="FeatureList">
-                        <econdition field-name="productId" from="order_part.item_details.productId"/>
-                    </entity-find>
-                    <log message="=======FeatureList=========${FeatureList}======="/>-->
-
-
-                    <log message="=======paymentList=========${paymentMethodList}======="/>
-                    <log message="=======order_part()=========${order_part}======="/>
                     <script>
                         order_part.put("orderId", order.orderId)
                         order_part.put("orderName", order.orderName)
@@ -56,76 +38,30 @@
                         order_part.put("paymentMethod", paymentMethodList?.paymentMethodTypeEnumId)
                         order_part.put("billing_details", order.billing_details)
                         order_part.put("customer_details", order.customer_details)
-
-                        System.out.println("++++++++++++${order_part}++++++++++++")
-
                     </script>
-<!--                    <log message="====itemsList:==========${order_part.item_details}======"/>-->
                     <iterate list="order_part.item_details" entry="item">
                         <service-call name="co.hotwax.oms.ProductServices.find#Products" in-map="[productId:item.productId]" out-map="productFeatureList"/>
-                        <log message="====productFeatureList=========${productFeatureList}============"/>
                         <script>
                             item.put("features",productFeatureList.products[0].features)
                         </script>
-
                     </iterate>
                     <script>
                         orderParts.add(order_part)
                     </script>
                 </iterate>
             </iterate>
-<!--            <set field="part" from="responseMap.orders.order_parts" type="List"/>-->
-<!--            <set field="orderParts" from="[]"/>-->
-<!--            <log message="==========part list==========${part}========="/>-->
-            <!--<iterate list="part" entry="p">
-                <iterate list="p" entry="pp">
-                    <script>
-                        orderParts.add(pp)
-                    </script>
-                </iterate>
-            </iterate>-->
-            <log message="=======orderParts=======${orderParts}======="/>
-            <!--<set field="responseMap" from="responseMap.responseMap"/>
-            <log message="=====responseMap2: ${responseMap}====="/>-->
-            <!--<script><![CDATA[
-                      import org.moqui.util.RestClient;
-                      import groovy.json.JsonSlurper;
-                         def connectUrl=connectUrl;
-                         RestClient restClient = ec.service.rest()
-                         restClient.method("GET")
-                         restClient.uri("http://localhost:8080/rest/s1/oms/orders?statusId=OrderApproved")
-                         restClient.basicAuth("john.doe","moqui")
-                         restClient.jsonObject(requestMap)
-                         RestClient.RestResponse restResponse = restClient.call()
-                         /*Checking Response Status Code is not verified yet*/
-                         if (restResponse.statusCode < 200 || restResponse.statusCode > 300) {
-                            errMsgMap = (Map) new JsonSlurper().parseText(restResponse.text())
-                            ec.logger.warn(restResponse.text())
-                            return responseMap
-                        }
-                        responseMap = restResponse.jsonObject()
-                     ]]>
-            </script>-->
-            <!--<log message="====Connection Response Map part: ${responseMap.orders.order_parts}======="/>
-            <set field="responselist" from="responseMap.orders"/>
-            <iterate list="responselist" entry="order">
-                <log message="=====OrderId: ${order.orderId}, Order TEST: ${order.order_parts}====="/>
-            </iterate>-->
-<!--            <log message="====Connection Response Map: ${responseMap}======="/>-->
-<!--            <script><![CDATA[-->
-<!--            import groovy.json.JsonSlurper;-->
-<!--            import groovy.json.*;-->
-<!--             JSONObject json = new JSONObject(responseMap);-->
-<!--               String xml = XML.toString(json);-->
-<!--               System.out.println("=====xml====="+xml+"===========")-->
-<!--               ]]>-->
-<!--            </script>-->
-
         </actions>
     </service>
+
+    <!--get#Data Service for getting XML data from screen-->
     <service verb="get" noun="Data">
         <in-parameters>
-            <parameter name="screenurl"/>
+            <parameter name="start_date" type="Timestamp" format="yyyy-MM-dd">
+                <description>Find orders placed at or after this date.</description>
+            </parameter>
+            <parameter name="end_date" type="Timestamp" format="yyyy-MM-dd">
+                <description>Find orders placed at or before this date.</description>
+            </parameter>
         </in-parameters>
         <actions>
             <script><![CDATA[

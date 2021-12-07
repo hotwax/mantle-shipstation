@@ -9,7 +9,4 @@
     <resource name="data" require-authentication="anonymous-all">
         <method type="get"><service name="mantle.shipstation.ShipStationServices.get#Data"/></method>
     </resource>
-    <resource name="Info" require-authentication="anonymous-all">
-        <method type="get"><service name="mantle.order.OrderInfoServices.get#OrderDisplayInfo"/></method>
-    </resource>
 </resource>
