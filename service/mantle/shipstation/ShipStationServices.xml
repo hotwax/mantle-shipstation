@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
 
-    <!--set#GetCall Service gets data from oms find#Orders service and modify the data for Orders.xml screen-->
+    <!--set#GetCall Service gets data from oms find#Orders service and modify the data for ShipStationOrder.xml screen-->
     <service verb="prepare" noun="ShipStationOrderData">
         <in-parameters>
             <parameter name="statusId"/>
@@ -68,7 +68,7 @@
 <!--        </out-parameters>-->
         <actions>
             <script><![CDATA[
-                def bodyRender = ec.screen.makeRender().rootScreen("component://mantle-shipstation/screen/Orders.xml").webappName("webroot").renderMode("text")
+                def bodyRender = ec.screen.makeRender().rootScreen("component://mantle-shipstation/screen/ShipStationOrder.xml").webappName("webroot").renderMode("text")
 
                 String bodytxt = bodyRender.render()
                 def response = ec.web.getResponse();
