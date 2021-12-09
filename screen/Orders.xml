@@ -8,7 +8,7 @@
     </actions>
     <widgets>
         <render-mode>
-            <text type="html" location="component://mantle-shipstation/screen/OrderXmlData.xml.ftl"/>
+            <text type="text" location="component://mantle-shipstation/screen/OrderXmlData.xml.ftl"/>
         </render-mode>
     </widgets>
 </screen>

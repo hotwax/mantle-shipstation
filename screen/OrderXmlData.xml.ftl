@@ -1,3 +1,4 @@
+<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <Orders>
 <#list orderParts as part><#assign items = part.item_details><#assign shipping = part.shipping_details>
   <Order>
@@ -47,14 +48,13 @@
         <Quantity>${item.quantity}</Quantity>
         <UnitPrice>${item.unitAmount}</UnitPrice>
         <Location><![CDATA[XX]]></Location>
-
-        <Options>
+          <Options>
           <#list item.features as feature>
-          <Option>
-            <Name><![CDATA[${feature.type!}]]></Name>
-            <Value><![CDATA[${feature.description!}]]></Value>
-            <Weight>XX</Weight>
-          </Option>
+            <Option>
+                <Name><![CDATA[${feature.type!}]]></Name>
+                <Value><![CDATA[${feature.description!}]]></Value>
+                <Weight>XX</Weight>
+            </Option>
           </#list>
         </Options>
       </Item>

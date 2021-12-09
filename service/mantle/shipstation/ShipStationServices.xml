@@ -13,7 +13,7 @@
             </parameter>
         </in-parameters>
         <out-parameters>
-            <parameter name="orderParts"/>
+            <parameter name="orderParts" type="List"/>
         </out-parameters>
         <actions>
             <set field="requestMap" from="placedDateStart:start_date, placedDateEnd:end_date, statusId:statusId" type="NewMap"/>
@@ -63,19 +63,24 @@
                 <description>Find orders placed at or before this date.</description>
             </parameter>
         </in-parameters>
+<!--        <out-parameters>-->
+<!--            <parameter name="responseXML"/>-->
+<!--        </out-parameters>-->
         <actions>
             <script><![CDATA[
-                def bodyRender = ec.screen.makeRender().rootScreen("component://mantle-shipstation/screen/Orders.xml").webappName("webroot").renderMode("html")
+                def bodyRender = ec.screen.makeRender().rootScreen("component://mantle-shipstation/screen/Orders.xml").webappName("webroot").renderMode("text")
 
                 String bodytxt = bodyRender.render()
                 def response = ec.web.getResponse();
-                response.setContentType("application/xml")
+
+                response.setContentType("text/plain")
                 Writer w = response.getWriter()
-                w.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>")
                 w.write(bodytxt)
                 w.flush()
+                w.close()
             ]]>
             </script>
         </actions>
     </service>
+
 </services>
