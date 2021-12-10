@@ -18,7 +18,9 @@
         <actions>
             <set field="requestMap" from="placedDateStart:start_date, placedDateEnd:end_date, statusId:statusId" type="NewMap"/>
             <set field="orderParts" from="[]"/>
+            <!--find#Orders service for Order Information fetch-->
             <service-call name="co.hotwax.oms.OrderServices.find#Orders" in-map="requestMap" out-map="responseMap"/>
+
             <iterate list="responseMap.orders" entry="order">
                 <iterate list="order.order_parts" entry="order_part">
                     <entity-find entity-name="mantle.account.payment.Payment" list="paymentList">
@@ -40,9 +42,20 @@
                         order_part.put("customer_details", order.customer_details)
                     </script>
                     <iterate list="order_part.item_details" entry="item">
+                        <!--Product Dimension-->
+                        <entity-find-one entity-name="mantle.product.ProductUomDimension" value-field="dimension">
+                            <field-map field-name="productId" from="item.productId"/>
+                            <field-map field-name="uomDimensionTypeId" value='Weight'/>
+                        </entity-find-one>
+                        <entity-find-one entity-name="moqui.basic.Uom" value-field="uomWeight">
+                            <field-map field-name="uomId" from="dimension?.uomId"/>
+                        </entity-find-one>
+                        <!--find#Product service call for product features-->
                         <service-call name="co.hotwax.oms.ProductServices.find#Products" in-map="[productId:item.productId]" out-map="productFeatureList"/>
                         <script>
                             item.put("features",productFeatureList.products[0].features)
+                            item.put("Weight",dimension?.value)
+                            item.put("WeightUnits",uomWeight?.abbreviation)
                         </script>
                     </iterate>
                     <script>
@@ -63,17 +76,14 @@
                 <description>Find orders placed at or before this date.</description>
             </parameter>
         </in-parameters>
-<!--        <out-parameters>-->
-<!--            <parameter name="responseXML"/>-->
-<!--        </out-parameters>-->
         <actions>
+
             <script><![CDATA[
                 def bodyRender = ec.screen.makeRender().rootScreen("component://mantle-shipstation/screen/ShipStationOrder.xml").webappName("webroot").renderMode("text")
 
                 String bodytxt = bodyRender.render()
                 def response = ec.web.getResponse();
-
-                response.setContentType("text/plain")
+                response.setContentType("application/xml")
                 Writer w = response.getWriter()
                 w.write(bodytxt)
                 w.flush()
