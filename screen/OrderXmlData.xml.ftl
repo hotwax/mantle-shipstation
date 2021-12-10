@@ -1,17 +1,24 @@
 <?xml version=\"1.0\" encoding=\"utf-8\"?>
 <Orders>
-<#list orderParts as part><#assign items = part.item_details><#assign shipping = part.shipping_details>
+<#list orderParts as orders>
+<#list orders.order_parts as part><#assign items = part.item_details><#assign shipping = part.shipping_details>
   <Order>
-    <OrderID><![CDATA[${part.orderId!}]]></OrderID>
-    <OrderNumber><![CDATA[${part.orderName!}]]></OrderNumber>
-    <OrderDate>${part.placedDate!}</OrderDate>
+    <OrderID><![CDATA[${orders.orderId!}]]></OrderID>
+    <OrderNumber><![CDATA[${orders.orderName!}]]></OrderNumber>
+    <OrderDate>${orders.placedDate!}</OrderDate>
     <OrderStatus><![CDATA[${part.partStatusId}]]></OrderStatus>
     <LastModified>${part.lastModified}</LastModified>
-    <#assign shipmentMethod = ec.entity.find("moqui.basic.Enumeration").condition("enumId",part.shipmentMethodEnumId).useCache(true).one()>
-    <ShippingMethod><![CDATA[${shipmentMethod.description}]]></ShippingMethod>
-    <#assign paymentMethod = ec.entity.find("moqui.basic.Enumeration").condition("enumId",part.paymentMethod!).useCache(true).one()>
-    <PaymentMethod><![CDATA[${paymentMethod.description!}]]></PaymentMethod>
-    <CurrencyCode>${part.currencyUom}</CurrencyCode>
+    <#assign shipmentMethod = ec.entity.find("moqui.basic.Enumeration").condition("enumId",part.shipmentMethodEnumId!).useCache(true).one()>
+    <ShippingMethod><![CDATA[${shipmentMethod.description!}]]></ShippingMethod>
+
+    <#assign payment = ec.entity.find("mantle.account.payment.Payment").condition("orderId",orders.orderId).condition("orderPartSeqId",part.id).useCache(true).one()>
+    <#if payment!="null">
+        <#assign paymentMethod = ec.entity.find("mantle.account.method.PaymentMethod").condition("paymentMethodId",payment.paymentMethodId!).useCache(true).one()>
+    </#if>
+    <#assign paymentDescription = ec.entity.find("moqui.basic.Enumeration").condition("enumId",paymentMethod.paymentMethodTypeEnumId!).useCache(true).one()>
+
+    <PaymentMethod><![CDATA[${paymentDescription.description!}]]></PaymentMethod>
+    <CurrencyCode>${orders.currencyUom}</CurrencyCode>
     <OrderTotal>${part.partTotal}</OrderTotal>
     <TaxAmount>XX</TaxAmount>
     <ShippingAmount>${part.shippingCost}</ShippingAmount>
@@ -20,12 +27,12 @@
     <Gift>${part.isGift}</Gift>
     <GiftMessage>${part.giftMessage}</GiftMessage>
     <Customer>
-      <CustomerCode><![CDATA[${part.customer_details.email}]]></CustomerCode>
+      <CustomerCode><![CDATA[${orders.customer_details.email}]]></CustomerCode>
       <BillTo>
-        <Name><![CDATA[${part.billing_details.address.toName}]]></Name>
+        <Name><![CDATA[${orders.billing_details.address.toName}]]></Name>
         <Company><![CDATA[XX]]></Company>
-        <Phone><![CDATA[${part.billing_details.phone.contactNumber!}]]></Phone>
-        <Email><![CDATA[${part.customer_details.email}]]></Email>
+        <Phone><![CDATA[${orders.billing_details.phone.contactNumber!}]]></Phone>
+        <Email><![CDATA[${orders.customer_details.email}]]></Email>
       </BillTo>
       <ShipTo>
         <#assign geo = ec.entity.find("moqui.basic.Geo").condition("geoId",shipping.address.stateProvinceGeoId!).useCache(true).one()>
@@ -43,16 +50,19 @@
     <Items>
     <#list items as item>
       <Item>
+        <#assign dimension = ec.entity.find("mantle.product.ProductUomDimension").condition("productId",item.productId).condition("uomDimensionTypeId",'Weight').useCache(true).one()>
+        <#assign units = ec.entity.find("moqui.basic.Uom").condition("uomId",dimension.uomId).useCache(true).one()>
         <SKU><![CDATA[${item.sku}]]></SKU>
         <Name><![CDATA[${item.product_name}]]></Name>
         <ImageUrl><![CDATA[XX]]></ImageUrl>
-        <Weight>${item.Weight!}</Weight>
-        <WeightUnits>${item.WeightUnits!}</WeightUnits>
+        <Weight>${dimension.value!}</Weight>
+        <WeightUnits>${units.abbreviation!}</WeightUnits>
         <Quantity>${item.quantity}</Quantity>
         <UnitPrice>${item.unitAmount}</UnitPrice>
         <Location><![CDATA[XX]]></Location>
+        <#assign featuresList = ec.service.sync().name("co.hotwax.oms.ProductServices.find#Products").parameter("productId", item.productId).call()>
           <Options>
-          <#list item.features as feature>
+          <#list featuresList.products[0].features as feature>
             <#assign featureType = ec.entity.find("moqui.basic.Enumeration").condition("enumId",feature.type!).useCache(true).one()>
             <Option>
                 <Name><![CDATA[${featureType.description!}]]></Name>
@@ -66,5 +76,6 @@
     </Items>
 
   </Order>
+ </#list>
  </#list>
  </Orders>
