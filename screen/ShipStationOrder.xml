@@ -4,9 +4,7 @@
     <parameter name="end_date"/>
     <actions>
         <service-call name="co.hotwax.oms.OrderServices.find#Orders" in-map="[statusId:'OrderApproved',start_date:start_date,end_date:end_date]" out-map="context"/>
-        <log message="++++++++context is ++++++++++${context}"/>
         <set field="orderParts" from="context.orders" type="List"/>
-        <log message="++++++++orderParts is ++++++++++${orderParts}"/>
     </actions>
     <widgets>
         <render-mode>

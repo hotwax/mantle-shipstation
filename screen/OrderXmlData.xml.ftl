@@ -54,7 +54,9 @@
         <#assign units = ec.entity.find("moqui.basic.Uom").condition("uomId",dimension.uomId).useCache(true).one()>
         <SKU><![CDATA[${item.sku}]]></SKU>
         <Name><![CDATA[${item.product_name}]]></Name>
-        <ImageUrl><![CDATA[XX]]></ImageUrl>
+        <#assign productContent = ec.entity.find("mantle.product.ProductContent").condition("productId",item.productId).condition("productContentTypeEnumId",'PcntImageLarge').useCache(true).one()>
+        <#assign url = ec.resource.getLocationReference(productContent.contentLocation)>
+        <ImageUrl><![CDATA[${url}]]></ImageUrl>
         <Weight>${dimension.value!}</Weight>
         <WeightUnits>${units.abbreviation!}</WeightUnits>
         <Quantity>${item.quantity}</Quantity>

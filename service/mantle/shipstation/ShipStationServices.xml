@@ -17,7 +17,7 @@
 
                 String bodytxt = bodyRender.render()
                 def response = ec.web.getResponse();
-                response.setContentType("application/xml")
+                response.setContentType("text/plain")
                 Writer w = response.getWriter()
                 w.write(bodytxt)
                 w.flush()
