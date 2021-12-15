@@ -10,7 +10,7 @@
     <OrderNumber><![CDATA[${orders.orderName!}]]></OrderNumber>
     <OrderDate>${orders.placedDate!}</OrderDate>
     <OrderStatus><![CDATA[${part.partStatusId}]]></OrderStatus>
-    <LastModified>${orderHeaderAndPart.lastUpdatedStamp}</LastModified>
+    <LastModified>${ec.l10n.format(orderHeaderAndPart.lastUpdatedStamp, 'yyyy-MM-dd HH:MM')}</LastModified>
     <#assign shipmentMethod = ec.entity.find("moqui.basic.Enumeration").condition("enumId",part.shipmentMethodEnumId!).useCache(true).one()>
     <ShippingMethod><![CDATA[${shipmentMethod.description!}]]></ShippingMethod>
     <#assign payment = ec.entity.find("mantle.account.payment.Payment").condition("orderId",orders.orderId).condition("orderPartSeqId",part.id).useCache(true).one()>
