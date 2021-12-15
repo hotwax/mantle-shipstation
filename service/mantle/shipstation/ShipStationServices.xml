@@ -27,4 +27,45 @@
         </actions>
     </service>
 
+    <service verb="post" noun="ShipNotification">
+        <in-parameters>
+            <parameter name="orderId"/>
+            <parameter name="tracking_number"/>
+        </in-parameters>
+        <actions>
+            <!--<log message="+++++++++++${ec.web.getRequest()}+++++++++"/>-->
+            <log message="+++++++++++${ec.web.getParameters()}+++++++++"/>
+            <set field="tNo" from="tracking_number"/>
+            <log message="+++++++++++${tNo}++++++${orderId}+++++"/>
+            <set field="xmlData" from="ec.web.getRequestBodyText()"/>
+            <log message="++++++++${xmlData}++++++++"/>
+            <set field="itemList" from="[]"/>
+            <script>
+
+                def rootNode = new XmlParser().parseText(xmlData)
+
+                System.out.println("++++++${rootNode.'OrderID'}++++++")
+                //rootNode.two.text() == 'Some text!'
+                System.out.println("++Items++++${rootNode.'Items'}++++++")
+                System.out.println("++++++Loop start+++++++")
+
+
+                for (Node item in rootNode.'Items'.'Item') {
+
+
+                    System.out.println("+++++++++++${item}++++++++++++++")
+                    String sku = item.'SKU'.text()
+                    String name = item.'Name'.text()
+                    String quantity = item.'Quantity'.text()
+                    String lineItemId = item.'LineItemID'.text()
+                    itemList.add([SKU:sku,Name:name,Quantity:quantity,LineItemId:lineItemId])
+
+                    System.out.println("sku:"+sku+" name:"+name+" quantity:"+quantity+" lineItemId:"+lineItemId)
+                }
+            </script>
+            <log message="==itemList========${itemList}============="/>
+            <!--<service-call name="update#mantle.order.OrderPart" in-map="[orderId:orderId,orderPartSeqId:'01',trackingNumber:tNo]"/>-->
+        </actions>
+    </service>
+
 </services>

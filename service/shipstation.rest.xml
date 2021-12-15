@@ -4,6 +4,7 @@
 <resource xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/rest-api-2.1.xsd" name="shipstation" displayName="ShipStation API" version="1.0.0" description="API for ShipStation Integration">
     <resource name="orders">
         <method type="get"><service name="mantle.shipstation.ShipStationServices.get#OrderData"/></method>
+        <method type="post"><service name="mantle.shipstation.ShipStationServices.post#ShipNotification"/></method>
     </resource>
 </resource>
 

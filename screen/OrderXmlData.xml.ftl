@@ -1,31 +1,32 @@
 <?xml version=\"1.0\" encoding=\"utf-8\"?>
 <Orders>
 <#list orderParts as orders>
-<#list orders.order_parts as part><#assign items = part.item_details><#assign shipping = part.shipping_details>
+<#list orders.order_parts as part>
+<#assign items = part.item_details>
+<#assign shipping = part.shipping_details>
   <Order>
+    <#assign orderHeaderAndPart = ec.entity.find("mantle.order.OrderHeaderAndPart").condition("orderId",orders.orderId).condition("orderPartSeqId",part.id).useCache(true).one()>
     <OrderID><![CDATA[${orders.orderId!}]]></OrderID>
     <OrderNumber><![CDATA[${orders.orderName!}]]></OrderNumber>
     <OrderDate>${orders.placedDate!}</OrderDate>
     <OrderStatus><![CDATA[${part.partStatusId}]]></OrderStatus>
-    <LastModified>${part.lastModified}</LastModified>
+    <LastModified>${orderHeaderAndPart.lastUpdatedStamp}</LastModified>
     <#assign shipmentMethod = ec.entity.find("moqui.basic.Enumeration").condition("enumId",part.shipmentMethodEnumId!).useCache(true).one()>
     <ShippingMethod><![CDATA[${shipmentMethod.description!}]]></ShippingMethod>
-
     <#assign payment = ec.entity.find("mantle.account.payment.Payment").condition("orderId",orders.orderId).condition("orderPartSeqId",part.id).useCache(true).one()>
     <#if payment!="null">
         <#assign paymentMethod = ec.entity.find("mantle.account.method.PaymentMethod").condition("paymentMethodId",payment.paymentMethodId!).useCache(true).one()>
     </#if>
     <#assign paymentDescription = ec.entity.find("moqui.basic.Enumeration").condition("enumId",paymentMethod.paymentMethodTypeEnumId!).useCache(true).one()>
-
     <PaymentMethod><![CDATA[${paymentDescription.description!}]]></PaymentMethod>
     <CurrencyCode>${orders.currencyUom}</CurrencyCode>
-    <OrderTotal>${part.partTotal}</OrderTotal>
+    <OrderTotal>${orderHeaderAndPart.partTotal}</OrderTotal>
     <TaxAmount>XX</TaxAmount>
     <ShippingAmount>${part.shippingCost}</ShippingAmount>
     <CustomerNotes><![CDATA[${part.shippingInstructions}]]></CustomerNotes>
     <InternalNotes><![CDATA[${part.shippingInstructions}]]></InternalNotes>
-    <Gift>${part.isGift}</Gift>
-    <GiftMessage>${part.giftMessage}</GiftMessage>
+    <Gift>${orderHeaderAndPart.isGift!}</Gift>
+    <GiftMessage>${orderHeaderAndPart.giftMessage!}</GiftMessage>
     <Customer>
       <CustomerCode><![CDATA[${orders.customer_details.email}]]></CustomerCode>
       <BillTo>
@@ -76,7 +77,6 @@
       </Item>
       </#list>
     </Items>
-
   </Order>
  </#list>
  </#list>
