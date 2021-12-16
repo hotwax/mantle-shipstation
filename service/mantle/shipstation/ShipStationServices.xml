@@ -1,28 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
-    <!--get#Data Service for getting XML data from screen-->
+    <!--get#OrderData Service for getting XML data from FTL-->
     <service verb="get" noun="OrderData">
         <in-parameters>
-            <parameter name="start_date" type="Timestamp" format="yyyy-MM-dd">
+            <parameter name="start_date" type="Timestamp" format="MM/dd/yyyy HH:mm">
                 <description>Find orders placed at or after this date.</description>
             </parameter>
-            <parameter name="end_date" type="Timestamp" format="yyyy-MM-dd">
+            <parameter name="end_date" type="Timestamp" format="MM/dd/yyyy HH:mm">
                 <description>Find orders placed at or before this date.</description>
             </parameter>
         </in-parameters>
         <actions>
-
-            <script><![CDATA[
-                def bodyRender = ec.screen.makeRender().rootScreen("component://mantle-shipstation/screen/ShipStationOrder.xml").webappName("webroot").renderMode("text")
-
-                String bodytxt = bodyRender.render()
+            <set field="orderParts" from="[]"/>
+            <script>
                 def response = ec.web.getResponse();
-                response.setContentType("text/plain")
+                def context = ec.service.sync().name("co.hotwax.oms.OrderServices.find#Orders").parameters([statusId:'OrderApproved',placedDateStart:start_date,placedDateEnd:end_date]).call()
+                orderParts = context.orders
+                response.setContentType("application/xml")
                 Writer w = response.getWriter()
-                w.write(bodytxt)
+                ec.resource.template("component://mantle-shipstation/screen/OrderXmlData.xml.ftl",w)
                 w.flush()
                 w.close()
-            ]]>
             </script>
         </actions>
     </service>
