@@ -5,7 +5,7 @@
 <#assign items = part.item_details>
 <#assign shipping = part.shipping_details>
   <Order>
-    <#assign orderHeaderAndPart = ec.entity.find("mantle.order.OrderHeaderAndPart").condition("orderId",orders.orderId).condition("orderPartSeqId",part.id).useCache(true).one()>
+    <#assign orderHeaderAndPart = ec.entity.find("mantle.order.OrderHeaderAndPart").condition("orderId",orders.orderId).condition("orderPartSeqId",part.id).one()>
     <OrderID><![CDATA[${orders.orderId!}]]></OrderID>
     <OrderNumber><![CDATA[${orders.orderName!}]]></OrderNumber>
     <OrderDate>${orders.placedDate!}</OrderDate>
@@ -13,9 +13,9 @@
     <LastModified>${ec.l10n.format(orderHeaderAndPart.lastUpdatedStamp, 'yyyy-MM-dd HH:MM')}</LastModified>
     <#assign shipmentMethod = ec.entity.find("moqui.basic.Enumeration").condition("enumId",part.shipmentMethodEnumId!).useCache(true).one()>
     <ShippingMethod><![CDATA[${shipmentMethod.description!}]]></ShippingMethod>
-    <#assign payment = ec.entity.find("mantle.account.payment.Payment").condition("orderId",orders.orderId).condition("orderPartSeqId",part.id).useCache(true).one()>
+    <#assign payment = ec.entity.find("mantle.account.payment.Payment").condition("orderId",orders.orderId).condition("orderPartSeqId",part.id).one()>
     <#if payment!="null">
-        <#assign paymentMethod = ec.entity.find("mantle.account.method.PaymentMethod").condition("paymentMethodId",payment.paymentMethodId!).useCache(true).one()>
+        <#assign paymentMethod = ec.entity.find("mantle.account.method.PaymentMethod").condition("paymentMethodId",payment.paymentMethodId!).one()>
     </#if>
     <#assign paymentDescription = ec.entity.find("moqui.basic.Enumeration").condition("enumId",paymentMethod.paymentMethodTypeEnumId!).useCache(true).one()>
     <PaymentMethod><![CDATA[${paymentDescription.description!}]]></PaymentMethod>
@@ -51,11 +51,11 @@
     <Items>
     <#list items as item>
       <Item>
-        <#assign dimension = ec.entity.find("mantle.product.ProductUomDimension").condition("productId",item.productId).condition("uomDimensionTypeId",'Weight').useCache(true).one()>
+        <#assign dimension = ec.entity.find("mantle.product.ProductUomDimension").condition("productId",item.productId).condition("uomDimensionTypeId",'Weight').one()>
         <#assign units = ec.entity.find("moqui.basic.Uom").condition("uomId",dimension.uomId).useCache(true).one()>
         <SKU><![CDATA[${item.sku}]]></SKU>
         <Name><![CDATA[${item.product_name}]]></Name>
-        <#assign productContent = ec.entity.find("mantle.product.ProductContent").condition("productId",item.productId).condition("productContentTypeEnumId",'PcntImageLarge').useCache(true).one()>
+        <#assign productContent = ec.entity.find("mantle.product.ProductContent").condition("productId",item.productId).condition("productContentTypeEnumId",'PcntImageLarge').one()>
         <#assign url = ec.resource.getLocationReference(productContent.contentLocation)>
         <ImageUrl><![CDATA[${url}]]></ImageUrl>
         <Weight>${dimension.value!}</Weight>
