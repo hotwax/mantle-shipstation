@@ -18,7 +18,7 @@
                     orderParts = context.orders
                     response.setContentType("application/xml")
                     Writer w = response.getWriter()
-                    ec.resource.template("component://mantle-shipstation/screen/OrderXmlData.xml.ftl",w)
+                    ec.resource.template("component://mantle-shipstation/screen/OrderData.xml.ftl",w)
                     w.flush()
                     w.close()
                 </script>
