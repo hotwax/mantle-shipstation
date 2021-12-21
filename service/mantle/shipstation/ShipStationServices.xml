@@ -31,12 +31,6 @@
             <parameter name="tracking_number"/>
         </in-parameters>
         <actions>
-            <!--<log message="+++++++++++${ec.web.getRequest()}+++++++++"/>-->
-            <log message="+++++++++++${ec.web.getParameters()}+++++++++"/>
-            <set field="tNo" from="tracking_number"/>
-            <log message="+++++++++++${tNo}++++++${orderId}+++++"/>
-            <set field="xmlData" from="ec.web.getRequestBodyText()"/>
-            <log message="++++++++${xmlData}++++++++"/>
             <set field="itemList" from="[]"/>
             <script>
 
@@ -48,59 +42,41 @@
                 def ShippingCost = rootNode.'ShippingCost'.text()
                 def Carrier = rootNode.'Carrier'.text()
                 def trackingNo = rootNode.'TrackingNumber'.text()
-                //rootNode.two.text() == 'Some text!'
-                System.out.println("++Items++++${rootNode.'Items'}++++++")
-                System.out.println("++++++Loop start+++++++")
-
 
                 for (Node item in rootNode.'Items'.'Item') {
-
-
-                    System.out.println("+++++++++++${item}++++++++++++++")
                     String sku = item.'SKU'.text()
                     String name = item.'Name'.text()
                     String quantity = item.'Quantity'.text()
                     String lineItemId = item.'LineItemID'.text()
                     itemList.add([SKU:sku,Name:name,Quantity:quantity,LineItemId:lineItemId])
-
-                    System.out.println("sku:"+sku+" name:"+name+" quantity:"+quantity+" lineItemId:"+lineItemId)
                 }
             </script>
-            <log message="==itemList========${itemList}============="/>
-            <!--<service-call name="update#mantle.order.OrderPart" in-map="[orderId:orderId,orderPartSeqId:'01',trackingNumber:tNo]"/>-->
-            
+
             <entity-find-one entity-name="mantle.order.OrderHeaderAndPart" value-field="orderInfo">
                 <field-map field-name="orderId" from="orderID"/>
             </entity-find-one>
-            <log message="==order========${orderInfo}============="/>
+            <service-call name="mantle.shipment.ShipmentServices.create#Shipment" in-map="[shipmentTypeEnumId:'ShpTpSales',statusId:'ShipShipped',fromPartyId:orderInfo.vendorPartyId,
+            toPartyId:orderInfo.customerPartyId, estimatedShipDate:shipDate, estimatedShipCost:ShippingCost, costUomId:orderInfo.currencyUomId, originFacilityId:orderInfo.facilityId
+            , carrierPartyId:Carrier, shipmentMethodEnumId:orderInfo.shipmentMethodEnumId]" out-map="shipmentInfo"/>
 
-            <set field="ShipmentInMap" from="[shipmentTypeEnumId:'ShpTpSales',statusId:'ShipShipped',fromPartyId:orderInfo.vendorPartyId,
-            toPartyId:orderInfo.customerPartyId, estimatedShipDate:shipDate, estimatedShipCost:ShippingCost, costUomId:orderInfo.currencyUomId]"/>
+            <iterate list="itemList" entry="item">
+                <entity-find-one entity-name="mantle.product.Product" value-field="productInfo">
+                    <field-map field-name="pseudoId" from="item.SKU"/>
+                </entity-find-one>
+                <service-call name="mantle.shipment.ShipmentServices.create#ShipmentItem" in-map="[shipmentId:shipmentInfo.shipmentId,productId:productInfo.productId,quantity:item.quantity]" out-map="shipmentItemSourceInfo"/>
+            </iterate>
 
-            <set field="ShipmentRouteSegmentInMap" from="[shipmentId: ,shipmentRouteSegmentSeqId:'01', originFacilityId:orderInfo.facilityId
-            , carrierPartyId:Carrier, shipmentMethodEnumId:orderInfo.shipmentMethodEnumId, statusId:'ShrssAccepted', masterTrackingCode:trackingNo]"/>
+            <service-call name="mantle.shipment.ShipmentServices.create#ShipmentPackage" in-map="[shipmentId:shipmentInfo.shipmentId]" out-map="shipmentPackageInfo"/>
 
-            <set field="ShipmentPackageInMap" from="[shipmentId: ]"/>
+            <iterate list="itemList" entry="item">
+                <entity-find-one entity-name="mantle.product.Product" value-field="productInfo">
+                    <field-map field-name="pseudoId" from="item.SKU"/>
+                </entity-find-one>
+                <service-call name="mantle.shipment.ShipmentServices.add#ItemToPackage" in-map="[shipmentId:shipmentInfo.shipmentId,productId:productInfo.productId,shipmentPackageSeqId:shipmentPackageInfo.shipmentPackageSeqId,quantity:item.quantity]" out-map="shipmentItemSourceInfo"/>
+            </iterate>
 
+            <service-call name="mantle.shipment.ShipmentServices.update#ShipmentPackageAndRouteSeg" in-map="[shipmentId:shipmentInfo.shipmentId,shipmentPackageSeqId:shipmentPackageInfo.shipmentPackageSeqId,shipmentRouteSegmentSeqId:shipmentInfo.shipmentRouteSegmentSeqId,trackingCode:trackingNo]"/>
 
-            <!--<mantle.shipment.ShipmentRouteSegment shipmentId="Fedex_Shipment" shipmentRouteSegmentSeqId="01"
-                                                  shippingGatewayConfigId="FEDEX_INTEGRATION" originPostalContactMechId="Fedex_Origin_PA"
-                                                  destPostalContactMechId="Fedex_Dest_PA" carrierPartyId="FedEx" shipmentMethodEnumId="ShMthSecondDay"
-                                                  statusId="ShrssNotStarted"/>-->
-
-           <!--<mantle.shipment.ShipmentPackage shipmentId="Fedex_Shipment" shipmentBoxTypeId="FedEx_Box_10kg" shipmentPackageSeqId="01"
-                                             weight="100" weightUomId="WT_kg"/>
-            <mantle.shipment.ShipmentPackageRouteSegment shipmentId="Fedex_Shipment" shipmentPackageSeqId="01" shipmentRouteSegmentSeqId="01"/>-->
-
-            <!--<mantle.shipment.ShipmentItem shipmentId="Fedex_Shipment" productId="Fedex_Product" quantity="10"/>
-            <mantle.shipment.ShipmentPackageContent shipmentId="Fedex_Shipment"  shipmentPackageSeqId="01" productId="Fedex_Product"
-                                                    quantity="3"/>-->
-
-            <log message="++++++ShipmentInMap+++++${ShipmentInMap}+++++++"/>
-
-<!--            <service-call name="create#mantle.shipment.Shipment" in-map="ShipmentInMap" out-map="ShipmentResponse"/>-->
-            
-            
         </actions>
     </service>
 
