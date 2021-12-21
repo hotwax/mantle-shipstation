@@ -42,7 +42,12 @@
 
                 def rootNode = new XmlParser().parseText(xmlData)
 
-                System.out.println("++++++${rootNode.'OrderID'}++++++")
+                System.out.println("++orderID++++${rootNode.'OrderID'}++++++")
+                def orderID = rootNode.'OrderID'.text()
+                def shipDate = rootNode.'ShipDate'.text()
+                def ShippingCost = rootNode.'ShippingCost'.text()
+                def Carrier = rootNode.'Carrier'.text()
+                def trackingNo = rootNode.'TrackingNumber'.text()
                 //rootNode.two.text() == 'Some text!'
                 System.out.println("++Items++++${rootNode.'Items'}++++++")
                 System.out.println("++++++Loop start+++++++")
@@ -63,6 +68,39 @@
             </script>
             <log message="==itemList========${itemList}============="/>
             <!--<service-call name="update#mantle.order.OrderPart" in-map="[orderId:orderId,orderPartSeqId:'01',trackingNumber:tNo]"/>-->
+            
+            <entity-find-one entity-name="mantle.order.OrderHeaderAndPart" value-field="orderInfo">
+                <field-map field-name="orderId" from="orderID"/>
+            </entity-find-one>
+            <log message="==order========${orderInfo}============="/>
+
+            <set field="ShipmentInMap" from="[shipmentTypeEnumId:'ShpTpSales',statusId:'ShipShipped',fromPartyId:orderInfo.vendorPartyId,
+            toPartyId:orderInfo.customerPartyId, estimatedShipDate:shipDate, estimatedShipCost:ShippingCost, costUomId:orderInfo.currencyUomId]"/>
+
+            <set field="ShipmentRouteSegmentInMap" from="[shipmentId: ,shipmentRouteSegmentSeqId:'01', originFacilityId:orderInfo.facilityId
+            , carrierPartyId:Carrier, shipmentMethodEnumId:orderInfo.shipmentMethodEnumId, statusId:'ShrssAccepted', masterTrackingCode:trackingNo]"/>
+
+            <set field="ShipmentPackageInMap" from="[shipmentId: ]"/>
+
+
+            <!--<mantle.shipment.ShipmentRouteSegment shipmentId="Fedex_Shipment" shipmentRouteSegmentSeqId="01"
+                                                  shippingGatewayConfigId="FEDEX_INTEGRATION" originPostalContactMechId="Fedex_Origin_PA"
+                                                  destPostalContactMechId="Fedex_Dest_PA" carrierPartyId="FedEx" shipmentMethodEnumId="ShMthSecondDay"
+                                                  statusId="ShrssNotStarted"/>-->
+
+           <!--<mantle.shipment.ShipmentPackage shipmentId="Fedex_Shipment" shipmentBoxTypeId="FedEx_Box_10kg" shipmentPackageSeqId="01"
+                                             weight="100" weightUomId="WT_kg"/>
+            <mantle.shipment.ShipmentPackageRouteSegment shipmentId="Fedex_Shipment" shipmentPackageSeqId="01" shipmentRouteSegmentSeqId="01"/>-->
+
+            <!--<mantle.shipment.ShipmentItem shipmentId="Fedex_Shipment" productId="Fedex_Product" quantity="10"/>
+            <mantle.shipment.ShipmentPackageContent shipmentId="Fedex_Shipment"  shipmentPackageSeqId="01" productId="Fedex_Product"
+                                                    quantity="3"/>-->
+
+            <log message="++++++ShipmentInMap+++++${ShipmentInMap}+++++++"/>
+
+<!--            <service-call name="create#mantle.shipment.Shipment" in-map="ShipmentInMap" out-map="ShipmentResponse"/>-->
+            
+            
         </actions>
     </service>
 
