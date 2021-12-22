@@ -11,6 +11,7 @@
             </parameter>
         </in-parameters>
         <actions>
+
                 <set field="orderParts" from="[]"/>
                 <script>
                     def response = ec.web.getResponse();
@@ -31,6 +32,7 @@
             <parameter name="tracking_number"/>
         </in-parameters>
         <actions>
+            <set field="xmlData" from="ec.web.getRequestBodyText()"/>
             <set field="itemList" from="[]"/>
             <script>
 
