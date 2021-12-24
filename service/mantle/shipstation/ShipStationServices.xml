@@ -71,6 +71,8 @@
             toPartyId:orderInfo.customerPartyId, estimatedShipDate:Shipping_date, costUomId:orderInfo.currencyUomId, originFacilityId:orderInfo.facilityId
             , carrierPartyId:Carrier, shipmentMethodEnumId:orderInfo.shipmentMethodEnumId]" out-map="shipmentInfo"/>
 
+            <service-call name="mantle.shipment.ShipmentServices.create#ShipmentPackage" in-map="[shipmentId:shipmentInfo.shipmentId]" out-map="shipmentPackageInfo"/>
+
             <iterate list="itemList" entry="item">
                 <entity-find-one entity-name="mantle.product.Product" value-field="productInfo">
                     <field-map field-name="pseudoId" from="item.SKU"/>
@@ -81,15 +83,8 @@
                     <field-map field-name="productId" from="productInfo.productId"/>
                 </entity-find-one>
                 <service-call name="mantle.shipment.ShipmentServices.create#ShipmentItem" in-map="[shipmentId:shipmentInfo.shipmentId,productId:productInfo.productId,quantity:item.quantity,orderId:orderId,orderItemSeqId:orderItemInfo.orderItemSeqId]" out-map="shipmentItemSourceInfo"/>
-            </iterate>
-            <service-call name="mantle.shipment.ShipmentServices.create#ShipmentPackage" in-map="[shipmentId:shipmentInfo.shipmentId]" out-map="shipmentPackageInfo"/>
 
-            <iterate list="itemList" entry="item">
-                <entity-find-one entity-name="mantle.product.Product" value-field="productInfo">
-                    <field-map field-name="pseudoId" from="item.SKU"/>
-                </entity-find-one>
                 <service-call name="mantle.shipment.ShipmentServices.pack#ShipmentItemSource" in-map="[shipmentItemSourceId:shipmentItemSourceInfo.shipmentItemSourceId,shipmentPackageSeqId:shipmentPackageInfo.shipmentPackageSeqId,quantity:item.quantity]"/>
-
             </iterate>
 
             <service-call name="mantle.shipment.ShipmentServices.update#ShipmentPackageAndRouteSeg" in-map="[shipmentId:shipmentInfo.shipmentId,shipmentPackageSeqId:shipmentPackageInfo.shipmentPackageSeqId,shipmentRouteSegmentSeqId:shipmentInfo.shipmentRouteSegmentSeqId,trackingCode:trackingNo,labelDate:labelCreateDate]"/>
