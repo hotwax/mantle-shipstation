@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
 
     <!--
     TODO:
@@ -24,10 +25,11 @@
 
                 def response = ec.web.getResponse();
                 def context =
-                ec.service.sync().name("co.hotwax.oms.OrderServices.find#Orders").parameters([statusId:'OrderApproved',placedDateStart:ec.l10n.format(start_date,'yyyy-MM-dd
+                ec.service.sync().name("co.hotwax.oms.OrderServices.find#Orders").parameters([statusId:'OrderApproved',
+                placedDateStart:ec.l10n.format(start_date,'yyyy-MM-dd
                 HH:mm'),placedDateEnd:ec.l10n.format(end_date,'yyyy-MM-dd HH:mm')]).call()
 
-                orderParts = context.orders
+                Orders = context.orders
                 response.setContentType("application/xml")
                 Writer w = response.getWriter()
                 ec.resource.template("component://mantle-shipstation/screen/OrderData.xml.ftl",w)
@@ -49,9 +51,10 @@
         <actions>
             <set field="xmlData" from="ec.web.getRequestBodyText()"/>
             <set field="itemList" from="[]"/>
+            <set field="rootNode" from="new XmlParser().parseText(xmlData)"/>
             <script>
 
-                def rootNode = new XmlParser().parseText(xmlData)
+                //def rootNode = new XmlParser().parseText(xmlData)
                 def orderId = rootNode.'OrderID'.text()
                 def shipDate = rootNode.'ShipDate'.text()
                 def Shipping_date = Date.parse("MM/dd/yyyy", shipDate).format("yyyy-MM-dd")
@@ -61,22 +64,27 @@
                 def labelDate = rootNode.'LabelCreateDate'.text()
                 def labelCreateDate = Date.parse('MM/dd/yyyy HH:mm', labelDate).format("yyyy-MM-dd HH:mm")
 
-                for (Node item in rootNode.'Items'.'Item') {
-                String sku = item.'SKU'.text()
-                String name = item.'Name'.text()
-                String quantity = item.'Quantity'.text()
-                String lineItemId = item.'LineItemID'.text()
-                itemList.add([SKU:sku,Name:name,quantity:quantity,LineItemId:lineItemId])
-                }
             </script>
+            <iterate list="rootNode.'Items'.'Item'" entry="item">
+                <set field="sku" from="item.'SKU'.text()"/>
+                <set field="name" from="item.'Name'.text()"/>
+                <set field="quantity" from="item.'Quantity'.text()"/>
+                <set field="lineItemId" from="item.'LineItemID'.text()"/>
+                <script>
+                    itemList.add([SKU:sku,Name:name,quantity:quantity,LineItemId:lineItemId])
+                </script>
+            </iterate>
+            <log message="+++++++++${itemList}+++++++++"/>
+<!--
 
             <entity-find-one entity-name="mantle.order.OrderHeaderAndPart" value-field="orderInfo">
                 <field-map field-name="orderId" from="orderId"/>
             </entity-find-one>
 
             <service-call name="mantle.shipment.ShipmentServices.create#Shipment" in-map="[shipmentTypeEnumId:'ShpTpSales',statusId:'ShipInput',fromPartyId:orderInfo.vendorPartyId,
-            toPartyId:orderInfo.customerPartyId, estimatedShipDate:Shipping_date, costUomId:orderInfo.currencyUomId, originFacilityId:orderInfo.facilityId
-            , carrierPartyId:Carrier, shipmentMethodEnumId:orderInfo.shipmentMethodEnumId]" out-map="shipmentInfo"/>
+                        toPartyId:orderInfo.customerPartyId, estimatedShipDate:Shipping_date, costUomId:orderInfo.currencyUomId, originFacilityId:orderInfo.facilityId
+                        , carrierPartyId:Carrier, shipmentMethodEnumId:orderInfo.shipmentMethodEnumId]"
+                          out-map="shipmentInfo"/>
 
             <service-call name="mantle.shipment.ShipmentServices.create#ShipmentPackage"
                           in-map="[shipmentId:shipmentInfo.shipmentId]" out-map="shipmentPackageInfo"/>
@@ -99,12 +107,13 @@
             </iterate>
 
             <service-call name="mantle.shipment.ShipmentServices.update#ShipmentPackageAndRouteSeg" in-map="[shipmentId:shipmentInfo.shipmentId,shipmentPackageSeqId:shipmentPackageInfo.shipmentPackageSeqId,
-            shipmentRouteSegmentSeqId:shipmentInfo.shipmentRouteSegmentSeqId,trackingCode:trackingNo,labelDate:labelCreateDate]"/>
+                        shipmentRouteSegmentSeqId:shipmentInfo.shipmentRouteSegmentSeqId,trackingCode:trackingNo,labelDate:labelCreateDate]"/>
 
             <service-call name="mantle.shipment.ShipmentServices.pack#Shipment"
                           in-map="[shipmentId:shipmentInfo.shipmentId]"/>
             <service-call name="mantle.shipment.ShipmentServices.ship#Shipment"
                           in-map="[shipmentId:shipmentInfo.shipmentId]"/>
+-->
 
             <!--
             TODO:
@@ -113,4 +122,5 @@
 
         </actions>
     </service>
+
 </services>
