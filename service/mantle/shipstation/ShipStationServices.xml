@@ -27,7 +27,8 @@
                 def response = ec.web.getResponse();
                 def context =
                 ec.service.sync().name("co.hotwax.oms.OrderServices.find#Orders").parameters([statusId:'OrderApproved',
-                placedDateStart:ec.l10n.format(start_date,'yyyy-MM-dd HH:mm'),placedDateEnd:ec.l10n.format(end_date,'yyyy-MM-dd HH:mm')]).call()
+                placedDateStart:ec.l10n.format(start_date,'yyyy-MM-dd
+                HH:mm'),placedDateEnd:ec.l10n.format(end_date,'yyyy-MM-dd HH:mm')]).call()
 
                 Orders = context.orders
                 response.setContentType("application/xml")
@@ -82,10 +83,20 @@
             </entity-find-one>
 
             <!--Creating Shipment-->
-            <service-call name="mantle.shipment.ShipmentServices.create#Shipment" in-map="[shipmentTypeEnumId:'ShpTpSales',statusId:'ShipInput',fromPartyId:orderInfo.vendorPartyId,
+            <entity-find-one entity-name="mantle.party.Party" value-field="carrierInfo">
+                <field-map field-name="partyId" from="Carrier"/>
+                <field-map field-name="partyTypeEnumId" from="PtyOrganization"/>
+            </entity-find-one>
+            <!--If carrier is not found return message-->
+            <if condition="carrierInfo==null">
+                <return message="Invalid Carrier ${Carrier}" type="warning"/>
+            </if>
+            <else>
+                <service-call name="mantle.shipment.ShipmentServices.create#Shipment" in-map="[shipmentTypeEnumId:'ShpTpSales',statusId:'ShipInput',fromPartyId:orderInfo.vendorPartyId,
                                     toPartyId:orderInfo.customerPartyId, estimatedShipDate:Shipping_date, costUomId:orderInfo.currencyUomId, originFacilityId:orderInfo.facilityId
                                     , carrierPartyId:Carrier, shipmentMethodEnumId:orderInfo.shipmentMethodEnumId]"
-                          out-map="shipmentInfo"/>
+                              out-map="shipmentInfo"/>
+            </else>
             <!--Creating Shipment Package-->
             <service-call name="mantle.shipment.ShipmentServices.create#ShipmentPackage"
                           in-map="[shipmentId:shipmentInfo.shipmentId]" out-map="shipmentPackageInfo"/>
