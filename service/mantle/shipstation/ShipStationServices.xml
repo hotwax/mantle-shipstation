@@ -92,16 +92,16 @@
 
             <!--Iterating in itemList to add it to Shipment Items and move Asset Reservation to Issuance-->
             <iterate list="itemList" entry="item">
-                <entity-find-one entity-name="mantle.product.Product" value-field="productInfo">
-                    <field-map field-name="pseudoId" from="item.SKU"/>
-                </entity-find-one>
-                <entity-find-one entity-name="mantle.order.OrderItem" value-field="orderItemInfo">
-                    <field-map field-name="orderId" from="orderId"/>
-                    <field-map field-name="itemTypeEnumId" value="ItemProduct"/>
-                    <field-map field-name="productId" from="productInfo.productId"/>
-                </entity-find-one>
+                <entity-find entity-name="mantle.product.Product" list="productInfo">
+                    <econdition field-name="pseudoId" from="item.SKU"/>
+                </entity-find>
+                <entity-find entity-name="mantle.order.OrderItem" list="orderItemInfoList">
+                    <econdition field-name="orderId" from="orderId"/>
+                    <econdition field-name="itemTypeEnumId" value="ItemProduct"/>
+                    <econdition field-name="productId" from="productInfo[0].productId"/>
+                </entity-find>
                 <service-call name="mantle.shipment.ShipmentServices.create#ShipmentItem"
-                              in-map="[shipmentId:shipmentInfo.shipmentId,productId:productInfo.productId,quantity:item.quantity,orderId:orderId,orderItemSeqId:orderItemInfo.orderItemSeqId]"
+                              in-map="[shipmentId:shipmentInfo.shipmentId,productId:productInfo[0].productId,quantity:item.quantity,orderId:orderId,orderItemSeqId:orderItemInfoList[0].orderItemSeqId]"
                               out-map="shipmentItemSourceInfo"/>
 
                 <service-call name="mantle.shipment.ShipmentServices.pack#ShipmentItemSource"
