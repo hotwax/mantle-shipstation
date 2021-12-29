@@ -83,13 +83,13 @@
             </entity-find-one>
 
             <!--Creating Shipment-->
-            <entity-find-one entity-name="mantle.party.Party" value-field="carrierInfo">
+            <entity-find-one entity-name="mantle.party.PartyRole" value-field="carrierInfo">
                 <field-map field-name="partyId" from="Carrier"/>
-                <field-map field-name="partyTypeEnumId" from="PtyOrganization"/>
+                <field-map field-name="roleTypeId" value="Carrier"/>
             </entity-find-one>
             <!--If carrier is not found return message-->
             <if condition="carrierInfo==null">
-                <return message="Invalid Carrier ${Carrier}" type="warning"/>
+                <return error="true" message="Invalid Carrier ${Carrier}"/>
             </if>
             <else>
                 <service-call name="mantle.shipment.ShipmentServices.create#Shipment" in-map="[shipmentTypeEnumId:'ShpTpSales',statusId:'ShipInput',fromPartyId:orderInfo.vendorPartyId,
