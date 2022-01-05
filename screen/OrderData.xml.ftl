@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Orders>
-   <#list Orders as order>
+   <#list orders as order>
    <#list order.order_parts as part>
    <#assign items = part.item_details>
    <#assign shipping = part.shipping_details>
@@ -152,10 +152,10 @@
          <Item>
             <SKU></SKU>
             <Name>
-               <![CDATA[${discount.itemDescription}]]>
+               <![CDATA[${discount[0].itemDescription}]]>
             </Name>
-            <Quantity>${discount.quantity}</Quantity>
-            <UnitPrice>${discount.unitAmount}</UnitPrice>
+            <Quantity>${discount[0].quantity}</Quantity>
+            <UnitPrice>${discount[0].unitAmount}</UnitPrice>
             <Adjustment>true</Adjustment>
          </Item>
          </#if>
