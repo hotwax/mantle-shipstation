@@ -1,3 +1,6 @@
+# disclamer
+develop branch is not recomanded for any kind of use
+
 # mantle-shipstation
 ShipStation shipping gateway integration 
 
