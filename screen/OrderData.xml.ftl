@@ -66,7 +66,8 @@
                  </BillTo>
                  <ShipTo>
                     <#if !shipAddress.isEmpty()>
-                    <#assign geo = ec.entity.find("moqui.basic.Geo").condition("geoId",shipAddress.stateProvinceGeoId!).useCache(true).one()>
+                    <#assign geoState = ec.entity.find("moqui.basic.Geo").condition("geoId",shipAddress.stateProvinceGeoId!).useCache(true).one()>
+                    <#assign geoCountry = ec.entity.find("moqui.basic.Geo").condition("geoId",shipAddress.countryGeoId!).useCache(true).one()>
                     </#if>
                     <Name>
                        <![CDATA[${shipAddress.toName!}]]>
@@ -85,14 +86,14 @@
                     </City>
                     <#if geo??>
                     <State>
-                       <![CDATA[${geo.geoCodeAlpha2!}]]>
+                       <![CDATA[${geoState.geoCodeAlpha2!}]]>
                     </State>
                     </#if>
                     <PostalCode>
                        <![CDATA[${shipAddress.postalCode!}]]>
                     </PostalCode>
                     <Country>
-                       <![CDATA[${shipAddress.countryGeoId!}]]>
+                       <![CDATA[${geoCountry.geoCodeAlpha2!}]]>
                     </Country>
                     <Phone>
                        <![CDATA[${shipAddress.contactNumber!}]]>
@@ -148,7 +149,7 @@
                         </Options>
                      </Item>
                  </#list>
-                 <#assign discount = ec.entity.find("mantle.order.OrderItemDetail").condition("orderId",order.orderId).condition("orderPartSeqId",part.id).condition("itemTypeEnumId",'ItemDiscount').list()>
+                 <#assign discount = ec.entity.find("mantle.order.OrderItem").condition("orderId",order.orderId).condition("orderPartSeqId",part.id).condition("itemTypeEnumId",'ItemDiscount').list()>
                  <#if !discount.isEmpty()>
                      <Item>
                         <SKU></SKU>
