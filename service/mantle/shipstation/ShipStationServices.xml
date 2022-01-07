@@ -27,10 +27,9 @@
                 def response = ec.web.getResponse();
                 def context =
                 ec.service.sync().name("co.hotwax.oms.OrderServices.find#Orders").parameters([statusId:'OrderApproved',
-                placedDateStart:ec.l10n.format(start_date,'yyyy-MM-dd
-                HH:mm'),placedDateEnd:ec.l10n.format(end_date,'yyyy-MM-dd HH:mm')]).call()
+                placedDateStart:ec.l10n.format(start_date,'yyyy-MM-dd HH:mm'),placedDateEnd:ec.l10n.format(end_date,'yyyy-MM-dd HH:mm')]).call()
 
-                Orders = context.orders
+                orders = context.orders
                 response.setContentType("application/xml")
                 Writer w = response.getWriter()
                 ec.resource.template("component://mantle-shipstation/screen/OrderData.xml.ftl",w)
@@ -58,7 +57,7 @@
             <!--Preparing data from XML-->
             <set field="orderId" from="rootNode.'OrderID'.text()"/>
             <set field="shipDate" from="rootNode.'ShipDate'.text()"/>
-            <set field="Carrier" from="rootNode.'Carrier'.text()"/>
+            <set field="carrier" from="rootNode.'Carrier'.text()"/>
             <set field="trackingNo" from="rootNode.'TrackingNumber'.text()"/>
             <set field="labelDate" from="rootNode.'LabelCreateDate'.text()"/>
             <!--Formatting  date-time using groovy-->
@@ -75,60 +74,15 @@
                 <script>
                     itemList.add([SKU:sku,Name:name,quantity:quantity,LineItemId:lineItemId])
                 </script>
+
             </iterate>
+            <log message="${itemList}"/>
+            <service-call name="mantle.shipstation.ShipmentServices.get#OrderItemList"
+                          in-map="[orderId:orderId,itemList:itemList]" out-map="orderItemList"/>
 
-            <!--Entity find for getting order from orderId-->
-            <entity-find-one entity-name="mantle.order.OrderHeaderAndPart" value-field="orderInfo">
-                <field-map field-name="orderId" from="orderId"/>
-            </entity-find-one>
-
-            <!--Creating Shipment-->
-            <entity-find-one entity-name="mantle.party.PartyRole" value-field="carrierInfo">
-                <field-map field-name="partyId" from="Carrier"/>
-                <field-map field-name="roleTypeId" value="Carrier"/>
-            </entity-find-one>
-            <!--If carrier is not found return message-->
-            <if condition="carrierInfo==null">
-                <return error="true" message="Invalid Carrier ${Carrier}"/>
-            </if>
-            <else>
-                <service-call name="mantle.shipment.ShipmentServices.create#Shipment" in-map="[shipmentTypeEnumId:'ShpTpSales',statusId:'ShipInput',fromPartyId:orderInfo.vendorPartyId,
-                                    toPartyId:orderInfo.customerPartyId, estimatedShipDate:Shipping_date, costUomId:orderInfo.currencyUomId, originFacilityId:orderInfo.facilityId
-                                    , carrierPartyId:Carrier, shipmentMethodEnumId:orderInfo.shipmentMethodEnumId]"
-                              out-map="shipmentInfo"/>
-            </else>
-            <!--Creating Shipment Package-->
-            <service-call name="mantle.shipment.ShipmentServices.create#ShipmentPackage"
-                          in-map="[shipmentId:shipmentInfo.shipmentId]" out-map="shipmentPackageInfo"/>
-
-            <!--Iterating in itemList to add it to Shipment Items and move Asset Reservation to Issuance-->
-            <iterate list="itemList" entry="item">
-                <entity-find entity-name="mantle.product.Product" list="productInfo">
-                    <econdition field-name="pseudoId" from="item.SKU"/>
-                </entity-find>
-                <entity-find entity-name="mantle.order.OrderItem" list="orderItemInfoList">
-                    <econdition field-name="orderId" from="orderId"/>
-                    <econdition field-name="itemTypeEnumId" value="ItemProduct"/>
-                    <econdition field-name="productId" from="productInfo[0].productId"/>
-                </entity-find>
-                <service-call name="mantle.shipment.ShipmentServices.create#ShipmentItem"
-                              in-map="[shipmentId:shipmentInfo.shipmentId,productId:productInfo[0].productId,quantity:item.quantity,orderId:orderId,orderItemSeqId:orderItemInfoList[0].orderItemSeqId]"
-                              out-map="shipmentItemSourceInfo"/>
-
-                <service-call name="mantle.shipment.ShipmentServices.pack#ShipmentItemSource"
-                              in-map="[shipmentItemSourceId:shipmentItemSourceInfo.shipmentItemSourceId,shipmentPackageSeqId:shipmentPackageInfo.shipmentPackageSeqId,quantity:item.quantity]"/>
-            </iterate>
-
-            <!--Updating ShipmentPackageAndRouteSeg to store Tracking Code-->
-            <service-call name="mantle.shipment.ShipmentServices.update#ShipmentPackageAndRouteSeg" in-map="[shipmentId:shipmentInfo.shipmentId,shipmentPackageSeqId:shipmentPackageInfo.shipmentPackageSeqId,
-                                    shipmentRouteSegmentSeqId:shipmentInfo.shipmentRouteSegmentSeqId,trackingCode:trackingNo,labelDate:labelCreateDate]"/>
-            <!--Packing Shipment-->
-            <service-call name="mantle.shipment.ShipmentServices.pack#Shipment"
-                          in-map="[shipmentId:shipmentInfo.shipmentId]"/>
-            <!--Mark Shipment as Shipped-->
-            <service-call name="mantle.shipment.ShipmentServices.ship#Shipment"
-                          in-map="[shipmentId:shipmentInfo.shipmentId]"/>
-
+            <service-call name="mantle.shipstation.ShipmentServices.ship#PartialOrder"
+                          in-map="[orderId:orderId,orderPartSeqId:'01',orderItemList:orderItemList.orderItemList,
+                          shipDate:Shipping_date,carrier:carrier,trackingNo:trackingNo,labelCreateDate:labelCreateDate]"/>
             <!--
             TODO:
             Shipping rate is also returned by ShipStation but no action on it
@@ -136,5 +90,6 @@
 
         </actions>
     </service>
+
 
 </services>
