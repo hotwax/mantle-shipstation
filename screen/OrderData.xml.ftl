@@ -102,7 +102,6 @@
               <Items>
                  <#list items as item>
                      <Item>
-                        <#assign dimension = ec.entity.find("mantle.product.ProductUomDimension").condition("productId",item.productId).condition("uomDimensionTypeId",'Weight').list()>
                         <SKU>
                            <![CDATA[${item.sku!}]]>
                         </SKU>
@@ -116,6 +115,7 @@
                            <![CDATA[${url!}]]>
                         </ImageUrl>
                         </#if>
+                        <#assign dimension = ec.entity.find("mantle.product.ProductUomDimension").condition("productId",item.productId).condition("uomDimensionTypeId",'Weight').list()>
                         <#if !dimension.isEmpty()>
                         <#assign units = ec.entity.find("moqui.basic.Uom").condition("uomId",dimension[0].uomId).useCache(true).one()>
                         <Weight>${dimension.value!}</Weight>

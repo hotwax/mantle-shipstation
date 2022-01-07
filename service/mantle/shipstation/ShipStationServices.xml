@@ -72,13 +72,14 @@
                 <set field="quantity" from="item.'Quantity'.text()"/>
                 <set field="lineItemId" from="item.'LineItemID'.text()"/>
                 <script>
-                    itemList.add([SKU:sku,Name:name,quantity:quantity,LineItemId:lineItemId])
+                    itemList.add([sku:sku,name:name,quantity:quantity,lineItemId:lineItemId])
                 </script>
 
             </iterate>
-            <log message="${itemList}"/>
             <service-call name="mantle.shipstation.ShipmentServices.get#OrderItemList"
                           in-map="[orderId:orderId,itemList:itemList]" out-map="orderItemList"/>
+
+            <log message="++++++++${orderItemList}+++++++++"/>
 
             <service-call name="mantle.shipstation.ShipmentServices.ship#PartialOrder"
                           in-map="[orderId:orderId,orderPartSeqId:'01',orderItemList:orderItemList.orderItemList,

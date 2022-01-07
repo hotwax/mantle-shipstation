@@ -30,6 +30,7 @@
             </if>
             <!--<entity-find-related value-field="orderPart" relationship-name="mantle.order.OrderItem" list="orderItemList"
                                  order-by-list="['orderItemSeqId']"/>-->
+            <log message="=orderItemList=======${orderItemList}=========="/>
             <if condition="!orderItemList.find({ it.product?.productTypeEnumId in ['PtAsset', 'PtDigitalAsset', 'PtAssetUse', 'PtPickAssembly'] })">
                 <return type="warning"
                         message="Order ${orderId} part ${orderPartSeqId} has no shippable product items (type asset or asset use)"/>
@@ -107,7 +108,14 @@
     <service verb="get" noun="OrderItemList">
         <in-parameters>
             <parameter name="orderId" required="true"/>
-            <parameter name="itemList" type="List" required="true"/>
+            <parameter name="itemList" type="List" required="true">
+                <parameter name="itemMap" type="Map">
+                    <parameter name="sku"/>
+                    <parameter name="name"/>
+                    <parameter name="quantity"/>
+                    <parameter name="lineItemId"/>
+                </parameter>
+            </parameter>
         </in-parameters>
         <out-parameters>
             <parameter name="orderItemList" type="List"/>
@@ -116,7 +124,7 @@
             <set field="orderItemList" from="[]"/>
             <iterate list="itemList" entry="item">
                 <entity-find entity-name="mantle.product.Product" list="productInfo">
-                    <econdition field-name="pseudoId" from="item.SKU"/>
+                    <econdition field-name="pseudoId" from="item.sku"/>
                 </entity-find>
                 <entity-find entity-name="mantle.order.OrderItem" list="orderItemInfoList">
                     <econdition field-name="orderId" from="orderId"/>
@@ -133,7 +141,6 @@
                     orderItemList.add(orderItemInfoList[0])
                 </script>
             </iterate>
-
 
         </actions>
     </service>
