@@ -66,8 +66,8 @@
                  </BillTo>
                  <ShipTo>
                     <#if !shipAddress.isEmpty()>
-                    <#assign geoState = ec.entity.find("moqui.basic.Geo").condition("geoId",shipAddress.stateProvinceGeoId!).useCache(true).one()>
-                    <#assign geoCountry = ec.entity.find("moqui.basic.Geo").condition("geoId",shipAddress.countryGeoId!).useCache(true).one()>
+                        <#assign geoState = ec.entity.find("moqui.basic.Geo").condition("geoId",shipAddress.stateProvinceGeoId!).useCache(true).one()>
+                        <#assign geoCountry = ec.entity.find("moqui.basic.Geo").condition("geoId",shipAddress.countryGeoId!).useCache(true).one()>
                     </#if>
                     <Name>
                        <![CDATA[${shipAddress.toName!}]]>
@@ -84,17 +84,19 @@
                     <City>
                        <![CDATA[${shipAddress.city!}]]>
                     </City>
-                    <#if geo??>
-                    <State>
-                       <![CDATA[${geoState.geoCodeAlpha2!}]]>
-                    </State>
+                    <#if geoState??>
+                        <State>
+                           <![CDATA[${geoState.geoCodeAlpha2!}]]>
+                        </State>
                     </#if>
                     <PostalCode>
                        <![CDATA[${shipAddress.postalCode!}]]>
                     </PostalCode>
-                    <Country>
-                       <![CDATA[${geoCountry.geoCodeAlpha2!}]]>
-                    </Country>
+                    <#if geoCountry??>
+                        <Country>
+                           <![CDATA[${geoCountry.geoCodeAlpha2!}]]>
+                        </Country>
+                    </#if>
                     <Phone>
                        <![CDATA[${shipAddress.contactNumber!}]]>
                     </Phone>
@@ -111,16 +113,16 @@
                         </Name>
                         <#assign productContent = ec.entity.find("mantle.product.ProductContent").condition("productId",item.productId).condition("productContentTypeEnumId",'PcntImageLarge').list()>
                         <#if !productContent.isEmpty()>
-                        <#assign url = ec.resource.getLocationReference(productContent[0].contentLocation)>
-                        <ImageUrl>
-                           <![CDATA[${url!}]]>
-                        </ImageUrl>
+                            <#assign url = ec.resource.getLocationReference(productContent[0].contentLocation)>
+                            <ImageUrl>
+                               <![CDATA[${url!}]]>
+                            </ImageUrl>
                         </#if>
                         <#assign dimension = ec.entity.find("mantle.product.ProductUomDimension").condition("productId",item.productId).condition("uomDimensionTypeId",'Weight').list()>
                         <#if !dimension.isEmpty()>
-                        <#assign units = ec.entity.find("moqui.basic.Uom").condition("uomId",dimension[0].uomId).useCache(true).one()>
-                        <Weight>${dimension.value!}</Weight>
-                        <WeightUnits>${units.abbreviation!}</WeightUnits>
+                            <#assign units = ec.entity.find("moqui.basic.Uom").condition("uomId",dimension[0].uomId).useCache(true).one()>
+                            <Weight>${dimension.value!}</Weight>
+                            <WeightUnits>${units.abbreviation!}</WeightUnits>
                         </#if>
                         <Quantity>${item.quantity!}</Quantity>
                         <UnitPrice>${item.unitAmount!}</UnitPrice>
@@ -130,23 +132,25 @@
                            <![CDATA[XX]]>
                         </Location>
                         -->
-                        <#assign featuresList = ec.service.sync().name("co.hotwax.oms.ProductServices.find#Products").parameter("productId", item.productId).call()>
-                        <Options>
-                           <#list featuresList.products[0].features as feature>
-                           <#assign featureType = ec.entity.find("moqui.basic.Enumeration").condition("enumId",feature.type!).condition("enumTypeId",'ProductFeatureType').useCache(true).one()>
-                               <Option>
-                                  <Name>
-                                     <![CDATA[${featureType.description!}]]>
-                                  </Name>
-                                  <Value>
-                                     <![CDATA[${feature.description!}]]>
-                                  </Value>
-                                  <#--
-                                  <Weight>XX</Weight>
-                                  -->
-                               </Option>
-                           </#list>
-                        </Options>
+                        <#assign productFeaturesList = ec.entity.find("mantle.product.feature.ProductAndFeatureAndFeatureAppl").condition("productId",item.productId).selectField("productFeatureId,productFeatureTypeEnumId,productFeatureDescription").list()>
+                        <#if !productFeaturesList.isEmpty()>
+                            <Options>
+                               <#list productFeaturesList as feature>
+                               <#assign featureType = ec.entity.find("moqui.basic.Enumeration").condition("enumId",feature.productFeatureTypeEnumId!).condition("enumTypeId",'ProductFeatureType').useCache(true).one()>
+                                   <Option>
+                                      <Name>
+                                         <![CDATA[${featureType.description!}]]>
+                                      </Name>
+                                      <Value>
+                                         <![CDATA[${feature.productFeatureDescription!}]]>
+                                      </Value>
+                                      <#--
+                                      <Weight>XX</Weight>
+                                      -->
+                                   </Option>
+                               </#list>
+                            </Options>
+                        </#if>
                      </Item>
                  </#list>
                  <#assign discount = ec.entity.find("mantle.order.OrderItem").condition("orderId",order.orderId).condition("orderPartSeqId",part.id).condition("itemTypeEnumId",'ItemDiscount').list()>
