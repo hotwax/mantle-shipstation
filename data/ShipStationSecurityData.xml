@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="seed-initial">
+    <!-- Artifact group for all of the Example REST API via the example resource (the root resource) -->
+    <moqui.security.ArtifactGroup artifactGroupId="SHIPSTATION_API" description="ShipStation REST API (via root resource)"/>
+    <moqui.security.ArtifactGroupMember artifactGroupId="SHIPSTATION_API" artifactTypeEnumId="AT_REST_PATH"
+                                        inheritAuthz="Y" artifactName="/shipstation"/>
+    <!-- Full permissions for the ADMIN user group -->
+    <moqui.security.ArtifactAuthz artifactAuthzId="SHIPSTATIONAPI_AUTHZ_ALL" userGroupId="ADMIN" artifactGroupId="SHIPSTATION_API"
+                                  authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+</entity-facade-xml>
