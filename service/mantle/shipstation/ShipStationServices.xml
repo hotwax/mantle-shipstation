@@ -69,7 +69,7 @@
             <iterate list="rootNode.'Items'.'Item'" entry="item">
                 <set field="sku" from="item.'SKU'.text()"/>
                 <set field="name" from="item.'Name'.text()"/>
-                <set field="quantity" from="item.'Quantity'.text()"/>
+                <set field="quantity" from="Integer.valueOf(item.'Quantity'.text())"/>
                 <set field="lineItemId" from="item.'LineItemID'.text()"/>
                 <script>
                     itemList.add([sku:sku,name:name,quantity:quantity,lineItemId:lineItemId])
@@ -79,11 +79,9 @@
             <service-call name="mantle.shipstation.ShipmentServices.get#OrderItemList"
                           in-map="[orderId:orderId,itemList:itemList]" out-map="orderItemList"/>
 
-            <log message="++++++++${orderItemList}+++++++++"/>
-
-            <service-call name="mantle.shipstation.ShipmentServices.ship#PartialOrder"
-                          in-map="[orderId:orderId,orderPartSeqId:'01',orderItemList:orderItemList.orderItemList,
-                          shipDate:Shipping_date,carrier:carrier,trackingNo:trackingNo,labelCreateDate:labelCreateDate]"/>
+            <service-call name="mantle.shipstation.OmsShipmentService.ship#OrderItems"
+                          in-map="[orderId:orderId,orderPartSeqId:'01',
+                          shipDate:Shipping_date,orderItemList:orderItemList.itemList,carrier:carrier,trackingNo:trackingNo,labelCreateDate:labelCreateDate]"/>
             <!--
             TODO:
             Shipping rate is also returned by ShipStation but no action on it

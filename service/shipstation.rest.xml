@@ -6,7 +6,6 @@
         <method type="get"><service name="mantle.shipstation.ShipStationServices.get#OrderData"/></method>
         <method type="post"><service name="mantle.shipstation.ShipStationServices.post#ShipNotification"/></method>
     </resource>
-
 </resource>
 
 
