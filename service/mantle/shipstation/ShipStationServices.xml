@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
-
     <!--
     TODO:
         Time conversion for default time zone.
@@ -27,7 +26,8 @@
                 def response = ec.web.getResponse();
                 def context =
                 ec.service.sync().name("co.hotwax.oms.OrderServices.find#Orders").parameters([statusId:'OrderApproved',
-                placedDateStart:ec.l10n.format(start_date,'yyyy-MM-dd HH:mm'),placedDateEnd:ec.l10n.format(end_date,'yyyy-MM-dd HH:mm')]).call()
+                placedDateStart:ec.l10n.format(start_date,'yyyy-MM-dd
+                HH:mm'),placedDateEnd:ec.l10n.format(end_date,'yyyy-MM-dd HH:mm')]).call()
 
                 orders = context.orders
                 response.setContentType("application/xml")
