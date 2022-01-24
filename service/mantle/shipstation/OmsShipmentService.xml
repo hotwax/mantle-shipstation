@@ -9,9 +9,9 @@
             <parameter name="tryAutoPackage" type="Boolean" default="true"/>
             <parameter name="shipDate" type="Timestamp" default="ec.user.nowTimestamp"/>
             <parameter name="orderItemList" required="true" type="List"/>
-            <parameter name="trackingNo" required="true"/>
+            <parameter name="trackingNumber" required="true"/>
             <parameter name="carrier" required="true"/>
-            <parameter name="labelCreateDate"/>
+            <parameter name="labelDate"/>
         </in-parameters>
         <out-parameters>
             <parameter name="shipmentId"/>
@@ -19,9 +19,9 @@
         <actions>
 
             <!-- create#OrderPartShipment has transaction=cache so make it not init the tx cache with transaction=use-or-begin -->
-            <service-call name="mantle.shipstation.OmsShipmentService.create#PartialOrderPartShipment" out-map="context"
+            <service-call name="mantle.shipstation.OmsShipmentService.create#OrderItemsShipment" out-map="context"
                           in-map="[orderId:orderId, orderPartSeqId:orderPartSeqId, createPackage:true, entryDate:shipDate,
-                          tryAutoPackage:tryAutoPackage, orderItemList:orderItemList, trackingNo:trackingNo, carrier:carrier, labelCreateDate:labelCreateDate]"/>
+                          tryAutoPackage:tryAutoPackage, orderItemList:orderItemList, trackingNumber:trackingNumber, carrier:carrier, labelDate:labelDate]"/>
 
             <entity-find entity-name="moqui.basic.EnumGroupMember" list="productItemTypeEgms" cache="true">
                 <econdition field-name="enumGroupEnumId" value="EngItemsProduct"/>
@@ -29,16 +29,6 @@
             <set field="productItemTypes" from="productItemTypeEgms*.enumId"/>
 
             <!-- pack all items (creating ShipmentPackageContent and AssetIssuance records) -->
-
-            <!--<entity-find entity-name="mantle.order.OrderItem" list="orderItemList">
-                <econdition field-name="orderId"/>
-                <econdition field-name="orderPartSeqId"/createPackage>
-                <econdition field-name="itemTypeEnumId" operator="in" from="productItemTypes"/>
-                &lt;!&ndash; order by productId for consistent order to avoid circular locks and lock wait timeout errors when concurrently
-                    processing orders with the same products in a different order &ndash;&gt;
-                <order-by field-name="productId"/>
-            </entity-find>-->
-
             <iterate list="orderItemList" entry="orderItem">
                 <entity-find-one entity-name="mantle.order.OrderItem" value-field="Item">
                     <field-map field-name="orderId" from="orderId"/>
@@ -62,7 +52,7 @@
         </actions>
     </service>
 
-    <service verb="create" noun="PartialOrderPartShipment" transaction="cache">
+    <service verb="create" noun="OrderItemsShipment" transaction="cache">
         <in-parameters>
             <parameter name="orderId" required="true"/>
             <parameter name="orderPartSeqId" required="true"/>
@@ -74,9 +64,9 @@
             <parameter name="shippingGatewayConfigId"/>
             <parameter name="entryDate" type="Timestamp" default="ec.user.nowTimestamp"/>
             <parameter name="orderItemList" required="true" type="List"/>
-            <parameter name="trackingNo"/>
+            <parameter name="trackingNumber"/>
             <parameter name="carrier"/>
-            <parameter name="labelCreateDate"/>
+            <parameter name="labelDate"/>
         </in-parameters>
         <out-parameters>
             <parameter name="shipmentId"/>
@@ -91,8 +81,8 @@
 
             <!-- does the OrderPart have shippable items? -->
             <!--<entity-find-related value-field="orderPart" relationship-name="mantle.order.OrderItem" list="orderItemList"
-                                 order-by-list="['orderItemSeqId']"/>-->
-            <!--<if condition="!orderItemList.find({ it.product?.productTypeEnumId in ['PtAsset', 'PtDigitalAsset', 'PtAssetUse', 'PtPickAssembly'] })">
+                                 order-by-list="['orderItemSeqId']"/>
+            <if condition="!orderItemList.find({ it.product?.productTypeEnumId in ['PtAsset', 'PtDigitalAsset', 'PtAssetUse', 'PtPickAssembly'] })">
                 <return type="warning"
                         message="Order ${orderId} part ${orderPartSeqId} has no shippable product items (type asset or asset use)"/>
             </if>-->
@@ -254,7 +244,7 @@
             <if condition="shipmentPackageSeqId &amp;&amp; shipmentRouteSegmentSeqId">
                 <service-call name="create#mantle.shipment.ShipmentPackageRouteSeg"
                               in-map="[shipmentId:shipmentId, shipmentPackageSeqId:shipmentPackageSeqId,
-                                shipmentRouteSegmentSeqId:shipmentRouteSegmentSeqId, trackingCode:trackingNo,labelDate:labelCreateDate]"/>
+                                shipmentRouteSegmentSeqId:shipmentRouteSegmentSeqId, trackingCode:trackingNumber,labelDate:labelDate]"/>
             </if>
 
             <service-call name="mantle.shipstation.OmsShipmentService.add#OrderItemsToShipment"
