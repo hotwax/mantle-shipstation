@@ -18,7 +18,7 @@
         </out-parameters>
         <actions>
 
-            <!-- create#OrderPartShipment has transaction=cache so make it not init the tx cache with transaction=use-or-begin -->
+            <!-- create#OrderItemsShipment has transaction=cache so make it not init the tx cache with transaction=use-or-begin -->
             <service-call name="mantle.shipstation.OmsShipmentService.create#OrderItemsShipment" out-map="context"
                           in-map="[orderId:orderId, orderPartSeqId:orderPartSeqId, createPackage:true, entryDate:shipDate,
                           tryAutoPackage:tryAutoPackage, orderItemList:orderItemList, trackingNumber:trackingNumber, carrier:carrier, labelDate:labelDate]"/>
@@ -44,8 +44,6 @@
             <!-- set Shipment Packed -->
             <service-call name="mantle.shipment.ShipmentServices.pack#Shipment"
                           in-map="[shipmentId:shipmentId, packedDate:shipDate]"/>
-
-            <!-- NOTE: check order completed is done as items are packed, so by this point will be completed -->
 
             <!-- set Shipment Shipped -->
             <service-call name="mantle.shipment.ShipmentServices.ship#Shipment" in-map="[shipmentId:shipmentId]"/>
@@ -280,9 +278,7 @@
             </entity-find>
             <set field="productItemTypes" from="productItemTypeEgms*.enumId"/>
 
-            <!-- for each OrderItem in the part create ShipmentItem and ShipmentItemSource records -->
-            <!--<entity-find-related value-field="orderPart" relationship-name="mantle.order.OrderItem" list="orderItemList"
-                                 order-by-list="['orderItemSeqId']"/>-->
+            <!-- for each OrderItem, create ShipmentItem and ShipmentItemSource records -->
             <iterate list="orderItemList" entry="orderItem">
                 <entity-find-one entity-name="mantle.order.OrderItem" value-field="Item">
                     <field-map field-name="orderId" from="orderId"/>
@@ -351,7 +347,8 @@
                 </entity-find>
                 <!-- set shipmentId on existing OrderItemBilling records with no shipmentId (for billed before shipped, ie Invoice before Shipment) -->
 
-                <!--doubt in quantity-->
+                <!--TODO:
+                doubt in quantity-->
                 <set field="quantityNotBilled"
                      from="(orderItem.quantity != null ? orderItem.quantity : 1.0) * (orderItem.selectedAmount ?: 1.0)"/>
                 <iterate list="orderItemBillingList" entry="orderItemBilling">
