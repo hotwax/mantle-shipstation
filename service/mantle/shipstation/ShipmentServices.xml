@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
+
+    <!--service to create orderItemList-->
+    <service verb="get" noun="OrderItemList">
+        <in-parameters>
+            <parameter name="orderId" required="true"/>
+            <parameter name="itemList" type="List" required="true">
+                <parameter name="itemMap" type="Map">
+                    <parameter name="sku"/>
+                    <parameter name="name"/>
+                    <parameter name="quantity"/>
+                    <parameter name="lineItemId"/>
+                </parameter>
+            </parameter>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="itemList" type="List"/>
+        </out-parameters>
+        <actions>
+            <iterate list="itemList" entry="item">
+                <entity-find entity-name="mantle.product.Product" list="productInfo">
+                    <econdition field-name="pseudoId" from="item.sku"/>
+                </entity-find>
+                <entity-find entity-name="mantle.order.OrderItem" list="orderItemInfoList">
+                    <econdition field-name="orderId" from="orderId"/>
+                    <econdition field-name="itemTypeEnumId" value="ItemProduct"/>
+                    <econdition field-name="productId" from="productInfo[0].productId"/>
+                    <select-field field-name="orderId,orderItemSeqId,productId,itemDescription,quantity,
+                                    unitAmount,itemTypeEnumId"/>
+                </entity-find>
+                <if condition="orderItemInfoList.isEmpty()">
+                    <return error="true" message="Can't find item in this orderId ${orderId}"/>
+                </if>
+                <script>
+                    item.put("orderItemSeqId",orderItemInfoList[0].orderItemSeqId)
+                </script>
+            </iterate>
+
+        </actions>
+    </service>
+</services>

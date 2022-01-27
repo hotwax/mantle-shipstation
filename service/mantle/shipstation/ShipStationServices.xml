@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
+    <!--
+    TODO:
+        Time conversion for default time zone.
+    -->
+
+    <!--Service for getting XML data from screen-->
+    <service verb="get" noun="OrderData">
+        <in-parameters>
+            <parameter name="start_date" type="Timestamp" format="MM/dd/yyyy HH:mm">
+                <description>Find orders placed at or after this date.</description>
+            </parameter>
+            <parameter name="end_date" type="Timestamp" format="MM/dd/yyyy HH:mm">
+                <description>Find orders placed at or before this date.</description>
+            </parameter>
+            <parameter name="page"/>
+        </in-parameters>
+        <actions>
+            <set field="Orders" from="[]"/>
+
+            <!--Rendering FTL and writting Data from FTL to response-->
+            <script>
+                def response = ec.web.getResponse();
+                def context =
+                ec.service.sync().name("co.hotwax.oms.OrderServices.find#Orders").parameters([statusId:'OrderApproved',
+                placedDateStart:ec.l10n.format(start_date,'yyyy-MM-dd HH:mm'),placedDateEnd:ec.l10n.format(end_date,'yyyy-MM-dd HH:mm')]).call()
+
+                orders = context.orders
+                response.setContentType("application/xml")
+                Writer w = response.getWriter()
+                ec.resource.template("component://mantle-shipstation/screen/OrderData.xml.ftl",w)
+                w.flush()
+                w.close()
+            </script>
+
+        </actions>
+    </service>
+
+    <!-- service for POST call, when ShipStation wants to POST Shipment Notification-->
+    <service verb="post" noun="ShipNotification">
+        <in-parameters>
+            <parameter name="order_number"/>
+            <parameter name="carrier"/>
+            <parameter name="service"/>
+            <parameter name="tracking_number"/>
+        </in-parameters>
+        <actions>
+            <!--Parsing XML to get Data-->
+            <set field="xmlData" from="ec.web.getRequestBodyText()"/>
+            <set field="itemList" from="[]"/>
+            <!--Used XmlParser() for parsing-->
+            <set field="rootNode" from="new XmlParser().parseText(xmlData)"/>
+            <!--Preparing data from XML-->
+            <set field="orderId" from="rootNode.'OrderID'.text()"/>
+            <set field="shipDate" from="rootNode.'ShipDate'.text()"/>
+            <set field="carrier" from="rootNode.'Carrier'.text()"/>
+            <set field="trackingNo" from="rootNode.'TrackingNumber'.text()"/>
+            <set field="labelDate" from="rootNode.'LabelCreateDate'.text()"/>
+            <!--Formatting  date-time using groovy-->
+            <script>
+                def Shipping_date = Date.parse("MM/dd/yyyy", shipDate).format("yyyy-MM-dd")
+                def labelCreateDate = Date.parse('MM/dd/yyyy HH:mm', labelDate).format("yyyy-MM-dd HH:mm")
+            </script>
+            <!--Iterating in Item tag of XML and storing values in itemList-->
+            <iterate list="rootNode.'Items'.'Item'" entry="item">
+                <set field="sku" from="item.'SKU'.text()"/>
+                <set field="name" from="item.'Name'.text()"/>
+                <set field="quantity" from="Integer.valueOf(item.'Quantity'.text())"/>
+                <set field="lineItemId" from="item.'LineItemID'.text()"/>
+                <script>
+                    itemList.add([sku:sku,name:name,quantity:quantity,lineItemId:lineItemId])
+                </script>
+
+            </iterate>
+            <service-call name="mantle.shipstation.ShipmentServices.get#OrderItemList"
+                          in-map="[orderId:orderId,itemList:itemList]" out-map="orderItemList"/>
+
+            <service-call name="mantle.shipstation.OmsShipmentService.ship#OrderItems"
+                          in-map="[orderId:orderId,orderPartSeqId:'01',
+                          shipDate:Shipping_date,orderItemList:orderItemList.itemList,carrier:carrier,trackingNo:trackingNo,labelCreateDate:labelCreateDate]"/>
+            <!--
+            TODO:
+            Shipping rate is also returned by ShipStation but no action on it
+            -->
+
+        </actions>
+    </service>
+
+
+</services>
