@@ -1,4 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
+    <service verb="post" noun="ShipNotification">
+        <in-parameters>
+            <parameter name="order_number"/>
+            <parameter name="tracking_number"/>
+        </in-parameters>
+        <actions>
+            <!--Parsing XML to get Data-->
+            <set field="xmlData" from="ec.web.getRequestBodyText()"/>
+            <set field="itemList" from="[]"/>
+            <!--Used XmlParser() for parsing-->
+            <set field="rootNode" from="new XmlParser().parseText(xmlData)"/>
+            <!--Preparing data from XML-->
+            <set field="orderId" from="rootNode.'OrderID'.text()"/>
+            <set field="shipDate" from="rootNode.'ShipDate'.text()"/>
+            <set field="carrier" from="rootNode.'Carrier'.text()"/>
+            <set field="trackingNo" from="rootNode.'TrackingNumber'.text()"/>
+            <set field="labelDate" from="rootNode.'LabelCreateDate'.text()"/>
+            <!--Formatting  date-time using groovy-->
+            <script>
+                def Shipping_date = Date.parse("MM/dd/yyyy", shipDate).format("yyyy-MM-dd")
+                def labelCreateDate = Date.parse('MM/dd/yyyy HH:mm', labelDate).format("yyyy-MM-dd HH:mm")
+            </script>
+            <!--Iterating in Item tag of XML and storing values in itemList-->
+            <iterate list="rootNode.'Items'.'Item'" entry="item">
+            <set field="sku" from="item.'SKU'.text()"/>
+            <set field="name" from="item.'Name'.text()"/>
+            <set field="quantity" from="Integer.valueOf(item.'Quantity'.text())"/>
+            <set field="lineItemId" from="item.'LineItemID'.text()"/>
+            <script>
+                itemList.add([sku:sku,name:name,quantity:quantity,lineItemId:lineItemId])
+            </script>
+            </iterate>
+        </actions>
+    </service>
 
 </services>
