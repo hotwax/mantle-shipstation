@@ -38,6 +38,8 @@
             <script>
                 item.put("orderItemSeqId",orderItemInfoList[0].orderItemSeqId)
             </script>
+            <service-call name="mantle.ShipStation.ShipmentServices.get#OrderItemList"
+                          in-map="[orderId:orderId,itemList:itemList]" out-map="orderItemList"/>
         </actions>
     </service>
 </services>
