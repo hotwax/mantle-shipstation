@@ -32,6 +32,8 @@
                 itemList.add([sku:sku,name:name,quantity:quantity,lineItemId:lineItemId])
             </script>
             </iterate>
+            <service-call name="mantle.ShipStation.ShipmentServices.get#OrderItemList"
+                          in-map="[orderId:orderId,itemList:itemList]" out-map="orderItemList"/>
         </actions>
     </service>
 
