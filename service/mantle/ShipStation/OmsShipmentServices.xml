@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
+
+    <service verb="ship" noun="OrderItems">
+        <in-parameters>
+            <parameter name="orderId" required="true"/>
+            <parameter name="orderPartSeqId" required="true"/>
+            <parameter name="tryAutoPackage" type="Boolean" default="true"/>
+            <parameter name="shipDate" type="Timestamp" default="ec.user.nowTimestamp"/>
+            <parameter name="itemList" type="List" required="true">
+                <parameter name="itemMap" type="Map">
+                    <parameter name="orderItemList"/>
+                    <parameter name="quantity"/>
+                </parameter>
+            </parameter>
+            <parameter name="trackingNumber" required="true"/>
+            <parameter name="carrier" required="true"/>
+            <parameter name="labelDate"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="shipmentId"/>
+        </out-parameters>
+    </service>
+
+</services>
