@@ -21,6 +21,29 @@
         <out-parameters>
             <parameter name="shipmentId"/>
         </out-parameters>
+        <actions>
+            <!-- create#OrderItemsShipment has transaction=cache so make it not init the tx cache with transaction=use-or-begin -->
+            <service-call name="mantle.shipstation.OmsShipmentService.create#OrderItemsShipment" out-map="context"
+                          in-map="[orderId:orderId, orderPartSeqId:orderPartSeqId, createPackage:true, entryDate:shipDate,
+                                   tryAutoPackage:tryAutoPackage, trackingNumber:trackingNumber, carrier:carrier, labelDate:labelDate]"/>
+
+            <entity-find entity-name="moqui.basic.EnumGroupMember" list="productItemTypeEgms" cache="true">
+                <econdition field-name="enumGroupEnumId" value="EngItemsProduct"/>
+            </entity-find>
+
+            <set field="productItemTypes" from="productItemTypeEgms*.enumId"/>
+            <!-- pack all items (Creating ShipmentPackageContent and AssetIssuance records) -->
+            <iterate list="itemList" entry="item">
+                <entity-find-one entity-name="mantle.order.OrderItem" value-field="orderItem">
+                    <field-map field-name="orderId" from="orderId"/>
+                    <field-map field-name="orderItemSeqId" from="item.orderItemSeqId"/>
+                </entity-find-one>
+                <if condition="orderItem.productId &amp;&amp; productItemTypes.contains(orderItem.itemTypeEnumId)">
+                    <service-call name="mantle.shipment.ShipmentServices.pack#ShipmentProduct" in-map="[productId:orderItem.productId,
+                                        quantity:item.quantity, shipmentId:shipmentId, shipmentPackageSeqId:shipmentPackageSeqId]"/>
+                </if>
+            </iterate>
+        </actions>
     </service>
 
 </services>
