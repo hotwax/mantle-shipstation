@@ -43,6 +43,63 @@
                                         quantity:item.quantity, shipmentId:shipmentId, shipmentPackageSeqId:shipmentPackageSeqId]"/>
                 </if>
             </iterate>
+
+            <service-call name="mantle.shipment.ShipmentServices.pack#Shipment"
+                          in-map="[shipmentId:shipmentId, packedDate:shipDate]"/>
+
+            <!-- set shipment Shipped -->
+            <service-call name="mantle.shipment.ShipmentServices.ship#Shipment" in-map="[shipmentId:shipmentId]"/>
+        </actions>
+    </service>
+    <service verb="create" noun="OrderItemsShipment" transaction="cache">
+        <in-parameters>
+            <parameter name="orderId" required="true"/>
+            <parameter name="orderPartSeqId" required="true"/>
+            <parameter name="createPackage" type="Boolean" default="false"/>
+            <parameter name="createRouteSegment" type="Boolean" default="true"/>
+            <parameter name="originFacilityId"/>
+            <parameter name="destinationFacilityId"/>
+            <parameter name="tryAutoPackage" type="Boolean" default="true"/>
+            <parameter name="shippingGatewayConfigId"/>
+            <parameter name="entryDate" type="Timestamp" default="ec.user.nowTimestamp"/>
+            <parameter name="itemsList" type="List" required="true">
+                <parameter name="itemMap" type="Map">
+                    <parameter name="orderItemList"/>
+                    <parameter name="quantity"/>
+                </parameter>
+            </parameter>
+            <parameter name="trackingNumber"/>
+            <parameter name="carrier"/>
+            <parameter name="labelDate"/>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="shipmentId"/>
+            <parameter name="shipmentPackageSeqId"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="mantle.order.OrderHeader" value-field="orderHeader"/>
+            <entity-find-one entity-name="mantle.order.OrderPart" value-field="orderPart"/>
+            <if condition="!(orderPart.statusId in ['OrderApproved','OrderSent'] || orderHeader.statusId in ['OrderApproved', 'OrderSent'])">
+                <return type="danger" message="Cannot create Shipment for Order Part in status ${orderPart.statusId}"/>
+            </if>
+
+            <!-- and not already on a Shipment? -->
+            <set field="totalQtyToShip" from="0.0"/>
+            <set field="activeShipmentIds" from="new TreeSet()"/>
+            <entity-find entity-name="moqui.basic.EnumGroupMember" list="productItemTypeEgms" cache="true">
+                <econdition field-name="enumGroupEnumId" value="EngItemsProduct"/>
+            </entity-find>
+            <set field="productItemTypes" from="productItemTypeEgms*.enumId"/>
+
+            <iterate list="itemList" entry="item">
+            <entity-find-one entity-name="mantle.order.OrderItem" value-field="Item">
+                <field-map field-name="orderId" from="orderId"/>
+                <field-map field-name="orderItemSeqId" from="item.orderItemSeqId"/>
+            </entity-find-one>
+
+            <if condition="!orderItem.productId || productItemTypes.contains(orderItem.itemTypeEnumId)">
+                <continue/>
+            </if>
         </actions>
     </service>
 
