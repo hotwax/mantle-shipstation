@@ -246,4 +246,130 @@
         </actions>
     </service>
 
+    <service verb="add" noun="OrderItemsToShipment" transaction="cache">
+        <in-parameters>
+            <parameter name="orderId" required="true"/>
+            <parameter name="orderPartSeqId" required="true"/>
+            <parameter name="shipmentId" required="true"/>
+            <parameter name="itemsList" required="true" type="List">
+                <parameter name="itemMap" type="Map">
+                    <parameter name="orderItemList"/>
+                    <parameter name="quantity"/>
+                </parameter>
+            </parameter>
+        </in-parameters>
+        <actions>
+            <entity-find-one entity-name="mantle.shipment.Shipment" value-field="shipment"/>
+            <if condition="!(shipment.statusId in ['ShipInput', 'ShipScheduled', 'ShipPicked'])">
+                <return error="true" message="Cannot add Order item to Shipment in status ${shipment.statusId}"/>
+            </if>
+            <log message="==============================================shipment:${shipment}================================================="/>
+
+            <entity-find-one entity-name="mantle.order.OrderPart" value-field="orderPart"/>
+            <if condition="!(orderPart.statusId in ['OrderApproved','OrderSent'])">
+                <return error="true" message="Cannot add Order Part in status ${orderPart.statusId} to Shipment"/>
+            </if>
+
+            <entity-find entity-name="moqui.basic.EnumGroupMember" list="productItemTypeEgms" cache="true">
+                <econdition field-name="enumGroupEnumId" value="EngItemsProduct"/>
+            </entity-find>
+            <set field="productItemTypes" from="productItemTypeEgms*.enumId"/>
+
+            <!-- for each OrderItem, create ShipmentItem and ShipmentItemSource records -->
+            <iterate list="itemsList" entry="item">
+                <entity-find-one entity-name="mantle.order.OrderItem" value-field="orderItem">
+                    <field-map field-name="orderId" from="orderId"/>
+                    <field-map field-name="orderItemSeqId" from="item.orderItemSeqId"/>
+                </entity-find-one>
+                <!-- if no productId or not a product item type skip it -->
+                <if condition="!orderItem.productId || productItemTypes.contains(orderItem.itemTypeEnumId)">
+                    <continue/>
+                </if>
+
+                <!-- see if Product is a physical item -->
+                <entity-find-one entity-name="mantle.product.Product" value-field="product" cache="true">
+                    <field-map field-name="productId" from="orderItem.productId"/>
+                </entity-find-one>
+                <if condition="!(product.productTypeEnumId in ['PtAsset', 'PtDigitalAsset', 'PtAssetUse', 'PtPickAssembly'])">
+                    <continue/>
+                </if>
+
+                <!-- determine quantityNotShipped -->
+                <set field="quantityNotShipped"
+                     from="(orderItem.quantity != null ? orderItem.quantity : 1.0) * (orderItem.selectedAmount ?: 1.0)"/>
+                <entity-find entity-name="mantle.shipment.ShipmentAndItemSource" list="existingSisList">
+                    <econdition field-name="orderId"/>
+                    <econdition field-name="orderItemSeqId" from="item.orderItemSeqId"/>
+                    <econdition field-name="shipmentStatusId" operator="not-in" value="ShipRejected,ShipCancelled"/>
+                    <econdition field-name="statusId" operator="not-equals" value="SisCancelled"/>
+                </entity-find>
+                <iterate list="existingSisList" entry="existingSis">
+                    <set field="quantityNotShipped" from="quantityNotShipped - existingSis.quantity"/>
+                </iterate>
+
+                <log message="===========================================existingSisList:${existingSisList}============================"/>
+                <set field="shipQuantity" from="item.quantity"/>
+                <!-- Right now only shipping item when shipQuantity is greater than quantityNotShipped, else return warning-->
+                <if condition="quantityNotShipped &lt;= 0">
+                    <return type="warning"
+                            message="Cannot ship ${orderItem.orderItemSeqId}"/>
+                </if>
+                <if condition="quantityNotShipped &lt; shipQuantity">
+                    <return type="warning"
+                            message="Cannot ship ${orderItem.orderItemSeqId}"/>
+                </if>
+
+                <!-- add or update the ShipmentItem record for the productId -->
+                <entity-find-one entity-name="mantle.shipment.ShipmentItem" value-field="shipmentItem">
+                    <field-map field-name="shipmentId"/>
+                    <field-map field-name="productId" from="orderItem.productId"/>
+                </entity-find-one>
+                <if condition="shipmentItem">
+                    <then>
+                        <set field="shipmentItem.quantity" from="shipmentItem.quantity + item.quantity"/>
+                        <entity-update value-field="shipmentItem"/>
+                    </then>
+                    <else>
+                        <service-call name="create#mantle.shipment.ShipmentItem"
+                                      in-map="[shipmentId:shipmentId, productId:orderItem.productId, quantity:item.quantity]"/>
+                    </else>
+                </if>
+
+                <entity-find entity-name="mantle.order.OrderItemBilling" list="orderItemBillingList">
+                    <econdition field-name="orderId"/>
+                    <econdition field-name="orderItemSeqId" from="item.orderItemSeqId"/>
+                </entity-find>
+
+
+                <!-- set shipmentId on existing OrderItemBilling records with no shipmentId (for billed before shipped, ie Invoice before Shipment) -->
+
+                <set field="quantityNotBilled"
+                     from="(item.quantity != null ? item.quantity : 1.0) * (orderItem.selectedAmount ?: 1.0)"/>
+                <iterate list="orderItemBillingList" entry="orderItemBilling">
+                    <if condition="!orderItemBilling.shipmentId &amp;&amp; quantityNotBilled >= orderItemBilling.quantity">
+                        <set field="orderItemBilling.shipmentId" from="shipmentId"/>
+                        <entity-update value-field="orderItemBilling"/>
+                    </if>
+                    <set field="quantityNotBilled" from="quantityNotBilled - orderItemBilling.quantity"/>
+                    <!-- NOTE if orderItemBilling.shipmentId set split OrderItemBilling by Shipment quantities? -->
+                </iterate>
+                <!-- if quantityNotBilled > 0 do anything here? it should be handled when shipped (see InvoiceServices.create#SalesShipmentInvoices -->
+                <!-- set invoiceId, invoiceItemSeqId from existing OrderItemBilling records -->
+                <!-- simple case: full item already billed, just set the invoiceId so it is skipped when Shipment is Packed -->
+                <set field="singleFullOib" from="null"/>
+                <if condition="orderItemBillingList.size() == 1 &amp;&amp; quantityNotBilled == 0.0">
+                    <set field="singleFullOib" from="orderItemBillingList[0]"/>
+                </if>
+                <!-- NOTE: handle case where order item was invoiced, then quantity increased? just handle on Shipment Packed (in InvoiceServices.create#SalesShipmentInvoices) -->
+
+                <!-- create the ShipmentItemSource to associate the OrderItem with the Shipment -->
+                <service-call name="create#mantle.shipment.ShipmentItemSource"
+                              in-map="[shipmentId:shipmentId, productId:Item.productId, statusId:'SisPending',
+                            quantity:item.quantity, quantityNotHandled:item.quantity,
+                            orderId:orderItem.orderId, orderItemSeqId:item.orderItemSeqId,
+                            invoiceId:singleFullOib?.invoiceId, invoiceItemSeqId:singleFullOib?.invoiceItemSeqId]"/>
+            </iterate>
+        </actions>
+    </service>
+
 </services>
