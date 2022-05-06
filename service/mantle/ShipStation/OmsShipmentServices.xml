@@ -108,7 +108,6 @@
                 <if condition="!(product.productTypeEnumId in ['PtAsset', 'PtDigitalAsset', 'PtPickAssembly'])">
                     <continue/>
                 </if>
-
                 <!-- determine quantityNotShipped -->
                 <set field="quantityNotShipped"
                      from="(orderItem.quantity != null ? orderItem.quantity : 1.0) * (orderItem.selectedAmount ?: 1.0)"/>
@@ -129,89 +128,90 @@
                     <log message="orderId:${orderId}, id:${item.orderItemSeqId} is already shipped." level="warn"/>
                     <continue/>
                 </if>
+            </iterate>
 
-                <!-- is this an ongoing shipment (use ShipTpSales) or incoming (use ShpTpPurchase) order based on internal org? -->
-                <!-- TODO: what to do if both are internal orgs? need a flag or something for which side we're dealing with... -->
-                <entity-find-one entity-name="mantle.party.PartyRole" value-field="customerOrgInternal">
-                    <field-map field-name="partyId" from="orderPart.customerPartyId"/>
-                    <field-map field-name="roleTypeId" value="OrgInternal"/>
+            <!-- is this an ongoing shipment (use ShipTpSales) or incoming (use ShpTpPurchase) order based on internal org? -->
+            <!-- TODO: what to do if both are internal orgs? need a flag or something for which side we're dealing with... -->
+            <entity-find-one entity-name="mantle.party.PartyRole" value-field="customerOrgInternal">
+                <field-map field-name="partyId" from="orderPart.customerPartyId"/>
+                <field-map field-name="roleTypeId" value="OrgInternal"/>
+            </entity-find-one>
+            <set field="shipmentTypeEnumId" value="customerOrgInternal"/>
+            <if condition="orderPart.facilityId">
+                <if condition="customerOrgInternal">
+                    <then>
+                        <set field="destinationFacilityId" from="destinationFacilityId ?: orderPart.facilityId"/>
+                    </then>
+                    <else>
+                        <set field="originFacilityId" from="originFacilityId ?: orderPart.facilityId"/>
+                    </else>
+                </if>
+            </if>
+            <!-- get shippingGatewayConfigId from store, then vendor setting, then global -->
+            <if condition="!shippingGatewayConfigId &amp; &amp; orderHeader.productStoreId &amp; &amp; orderPart.carrierPartyId">
+                <entity-find-one entity-name="mantle.product.store.ProductStoreShippingGateway"
+                                 value-field="psShipGateway">
+                    <field-map field-name="productStoreId" from="orderHeader.productStoreId"/>
+                    <field-map field-name="carrierPartyId" from="orderPart.carrierPartyId"/>
                 </entity-find-one>
-                <set field="shipmentTypeEnumId" value="customerOrgInternal"/>
-                <if condition="orderPart.facilityId">
-                    <if condition="customerOrgInternal">
-                        <then>
-                            <set field="destinationFacilityId" from="destinationFacilityId ?: orderPart.facilityId"/>
-                        </then>
-                        <else>
-                            <set field="originFacilityId" from="originFacilityId ?: orderPart.facilityId"/>
-                        </else>
-                    </if>
+                <if condition="psShipGateway?.shippingGatewayConfigId">
+                    <set field="shippingGatewayConfigId" from="psShipGateway?.shippingGatewayConfigId"/>
                 </if>
-                <!-- get shippingGatewayConfigId from store, then vendor setting, then global -->
-                <if condition="!shippingGatewayConfigId &amp; &amp; orderHeader.productStoreId &amp; &amp; orderPart.carrierPartyId">
-                    <entity-find-one entity-name="mantle.product.store.ProductStoreShippingGateway"
-                                     value-field="psShipGateway">
-                        <field-map field-name="productStoreId" from="orderHeader.productStoreId"/>
-                        <field-map field-name="carrierPartyId" from="orderPart.carrierPartyId"/>
+            </if>
+            <if condition="!shippingGatewayConfigId &amp; &amp; orderPart.vendorPartId">
+                <!-- if shipment.fromPartyId lookup setting there -->
+                <service-call name="mantle.party.PartyServices.get#PartySettingValue" out-map="ptySettingOut"
+                              in-map="[partyId:orderPart.vendorPartyId, partySettingTypeId:'DefaultShipmentGatewayConfigId']"/>
+                <set field="shippingGatewayConfigId" from="ptySettingOut?.settingValue"/>
+            </if>
+            <if condition="!shippingGatewayConfigId">
+                <set field="shippingGatewayConfigId" from="ec.user.getPreference('DefaultShipmentGatewayConfigId')"/>
+            </if>
+
+            <!-- get signatureRequiredEnumId from OrderPart, if not set look at Product and ProductStoreProduct -->
+            <set field="signatureRequiredEnumId" from="orderPart.signatureRequiredEnumId"/>
+            <if condition="!signatureRequiredEnumId">
+                <iterate list="orderItemList" entry="orderItem">
+                    <entity-find-one entity-name="mantle.order.OrderItem" value-field="Item">
+                        <field-map field-name="orderId" from="orderId"/>
+                        <field-map field-name="orderItemSeqId" from="item.orderItemSeqId"/>
                     </entity-find-one>
-                    <if condition="psShipGateway?.shippingGatewayConfigId">
-                        <set field="shippingGatewayConfigId" from="psShipGateway?.shippingGatewayConfigId"/>
+                    <set field="oiProduct" from="orderItem.product"/>
+                    <if condition="oiProduct == null">
+                        <continue/>
                     </if>
-                </if>
-                <if condition="!shippingGatewayConfigId &amp; &amp; orderPart.vendorPartId">
-                    <!-- if shipment.fromPartyId lookup setting there -->
-                    <service-call name="mantle.party.PartyServices.get#PartySettingValue" out-map="ptySettingOut"
-                                  in-map="[partyId:orderPart.vendorPartyId, partySettingTypeId:'DefaultShipmentGatewayConfigId']"/>
-                    <set field="shippingGatewayConfigId" from="ptySettingOut?.settingValue"/>
-                </if>
-                <if condition="!shippingGatewayConfigId">
-                    <set field="shippingGatewayConfigId" from="ec.user.getPreference('DefaultShipmentGatewayConfigId')"/>
-                </if>
+                    <if condition="oiProduct.signatureRequiredEnumId &amp;&amp; oiProduct.signatureRequiredEnumId != 'PsrNone'">
+                        <set field="signatureRequiredEnumId" from="oiProduct.signatureRequiredEnumId"/>
+                        <break/>
 
-                <!-- get signatureRequiredEnumId from OrderPart, if not set look at Product and ProductStoreProduct -->
-                <set field="signatureRequiredEnumId" from="orderPart.signatureRequiredEnumId"/>
-                <if condition="!signatureRequiredEnumId">
-                    <iterate list="orderItemList" entry="orderItem">
-                        <entity-find-one entity-name="mantle.order.OrderItem" value-field="Item">
-                            <field-map field-name="orderId" from="orderId"/>
-                            <field-map field-name="orderItemSeqId" from="item.orderItemSeqId"/>
-                        </entity-find-one>
-                        <set field="oiProduct" from="orderItem.product"/>
-                        <if condition="oiProduct == null">
-                            <continue/>
-                        </if>
-                        <if condition="oiProduct.signatureRequiredEnumId &amp;&amp; oiProduct.signatureRequiredEnumId != 'PsrNone'">
-                            <set field="signatureRequiredEnumId" from="oiProduct.signatureRequiredEnumId"/>
-                            <break/>
-
-                        </if>
-                    </iterate>
-                </if>
-                <if condition="!signatureRequiredEnumId &amp;&amp; orderHeader.productStoreId">
-                    <iterate list="orderItemList" entry="orderItem">
-                        <entity-find-one entity-name="mantle.order.OrderItem" value-field="Item">
-                            <field-map field-name="orderId" from="orderId"/>
-                            <field-map field-name="orderItemSeqId" from="item.orderItemSeqId"/>
-                        </entity-find-one>
-                        <entity-find-one entity-name="mantle.product.store.ProductStoreProduct"
-                                         value-field="productStoreProduct">
-                            <field-map field-name="productStoreId" from="orderHeader.productStoreId"/>
-                            <field-map field-name="productId" from="orderItem.productId"/>
-                        </entity-find-one>
-                        <if condition="productStoreProduct == null">
-                            <continue/>
-                        </if>
-                        <if condition="productStoreProduct.signatureRequiredEnumId &amp; &amp; productStoreProduct.signatureRequiredEnumId != 'PsrNone'">
-                            <set field="signatureRequiredEnumId" from="productStoreProduct.signatureRequiredEnumId"/>
-                            <break/>
-                        </if>
-                    </iterate>
-                </if>
+                    </if>
+                </iterate>
+            </if>
+            <if condition="!signatureRequiredEnumId &amp;&amp; orderHeader.productStoreId">
+                <iterate list="orderItemList" entry="orderItem">
+                    <entity-find-one entity-name="mantle.order.OrderItem" value-field="Item">
+                        <field-map field-name="orderId" from="orderId"/>
+                        <field-map field-name="orderItemSeqId" from="item.orderItemSeqId"/>
+                    </entity-find-one>
+                    <entity-find-one entity-name="mantle.product.store.ProductStoreProduct"
+                                     value-field="productStoreProduct">
+                        <field-map field-name="productStoreId" from="orderHeader.productStoreId"/>
+                        <field-map field-name="productId" from="orderItem.productId"/>
+                    </entity-find-one>
+                    <if condition="productStoreProduct == null">
+                        <continue/>
+                    </if>
+                    <if condition="productStoreProduct.signatureRequiredEnumId &amp; &amp; productStoreProduct.signatureRequiredEnumId != 'PsrNone'">
+                        <set field="signatureRequiredEnumId" from="productStoreProduct.signatureRequiredEnumId"/>
+                        <break/>
+                    </if>
+                </iterate>
+            </if>
 
 
-                <!-- create Shipment record, get shipmentId -->
-                <service-call name="create#mantle.shipment.Shipment" out-map="context"
-                              in-map="[shipmentTypeEnumId:shipmentTypeEnumId, statusId:'ShipInput', entryDate:entryDate, priority:orderPart.priority,
+            <!-- create Shipment record, get shipmentId -->
+            <service-call name="create#mantle.shipment.Shipment" out-map="context"
+                          in-map="[shipmentTypeEnumId:shipmentTypeEnumId, statusId:'ShipInput', entryDate:entryDate, priority:orderPart.priority,
                         fromPartyId:orderPart.vendorPartyId, toPartyId:orderPart.customerPartyId,
                         productStoreId:orderHeader.productStoreId, costUomId:orderHeader.currencyUomId,
                         systemMessageRemoteId:orderHeader.systemMessageRemoteId, handlingInstructions:orderPart.shippingInstructions,
@@ -219,31 +219,30 @@
                         shipAfterDate:orderPart.shipAfterDate, shipBeforeDate:orderPart.shipBeforeDate,
                         estimatedShipDate:orderPart.estimatedShipDate, estimatedArrivalDate:orderPart.estimatedDeliveryDate]"/>
 
-                <if condition="createRouteSegment">
-                    <service-call name="create#mantle.shipment.ShipmentRouteSegment" out-map="context"
-                                  in-map="[shipmentId:shipmentId, carrierPartyId:carrier!=null? carrier:orderPart.carrierPartyId,
+            <if condition="createRouteSegment">
+                <service-call name="create#mantle.shipment.ShipmentRouteSegment" out-map="context"
+                              in-map="[shipmentId:shipmentId, carrierPartyId:carrier!=null? carrier:orderPart.carrierPartyId,
                             shipmentMethodEnumId:orderPart.shipmentMethodEnumId, shippingGatewayConfigId:shippingGatewayConfigId,
                             destPostalContactMechId:orderPart.postalContactMechId, destTelecomContactMechId:orderPart.telecomContactMechId,
                             originFacilityId:originFacilityId, destinationFacilityId:destinationFacilityId]"/>
-                </if>
+            </if>
 
-                <if condition="createPackage">
-                    <service-call name="create#mantle.shipment.ShipmentPackage" in-map="context" out-map="context"/>
-                </if>
-                <log message="===========================================context:${context}==================================="/>
-                <if condition="shipmentPackageSeqId &amp;&amp; shipmentRouteSegmentSeqId">
-                    <service-call name="create#mantle.shipment.ShipmentPackageRouteSeg"
-                                  in-map="[shipmentId:shipmentId, shipmentPackageSeqId:shipmentPackageSeqId,
+            <if condition="createPackage">
+                <service-call name="create#mantle.shipment.ShipmentPackage" in-map="context" out-map="context"/>
+            </if>
+            <log message="===========================================context:${context}==================================="/>
+            <if condition="shipmentPackageSeqId &amp;&amp; shipmentRouteSegmentSeqId">
+                <service-call name="create#mantle.shipment.ShipmentPackageRouteSeg"
+                              in-map="[shipmentId:shipmentId, shipmentPackageSeqId:shipmentPackageSeqId,
                                 shipmentRouteSegmentSeqId:shipmentRouteSegmentSeqId, trackingCode:trackingNumber,labelDate:labelDate]"/>
-                </if>
-                <service-call name="mantle.shipstation.OmsShipmentService.add#OrderItemsToShipment"
-                              in-map="[shipmentId:shipmentId, orderId:orderId, orderPartSeqId:orderPartSeqId, itemsList:itemsList]"/>
+            </if>
+            <service-call name="mantle.shipstation.OmsShipmentService.add#OrderItemsToShipment"
+                          in-map="[shipmentId:shipmentId, orderId:orderId, orderPartSeqId:orderPartSeqId, itemsList:itemsList]"/>
 
-                <if condition="shippingGatewayConfigId &amp;&amp; tryAutoPackage &amp;&amp; !customerOrgInternal">
-                    <service-call name="mantle.shipment.ShipmentServices.create#ShipmentAutoPackages"
-                                  in-map="[shipmentId:shipmentId, shipmentRouteSegmentSeqId:shipmentRouteSegmentSeqId]"/>
-                </if>
-            </iterate>
+            <if condition="shippingGatewayConfigId &amp;&amp; tryAutoPackage &amp;&amp; !customerOrgInternal">
+                <service-call name="mantle.shipment.ShipmentServices.create#ShipmentAutoPackages"
+                              in-map="[shipmentId:shipmentId, shipmentRouteSegmentSeqId:shipmentRouteSegmentSeqId]"/>
+            </if>
         </actions>
     </service>
 
