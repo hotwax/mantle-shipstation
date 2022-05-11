@@ -3,6 +3,8 @@
     <service verb="post" noun="ShipNotification">
         <in-parameters>
             <parameter name="order_number"/>
+            <parameter name="carrier"/>
+            <parameter name="service"/>
             <parameter name="tracking_number"/>
         </in-parameters>
         <actions>
@@ -17,6 +19,7 @@
             <set field="carrier" from="rootNode.'Carrier'.text()"/>
             <set field="trackingNo" from="rootNode.'TrackingNumber'.text()"/>
             <set field="labelDate" from="rootNode.'LabelCreateDate'.text()"/>
+
             <!--Formatting  date-time using groovy-->
             <script>
                 def Shipping_date = Date.parse("MM/dd/yyyy", shipDate).format("yyyy-MM-dd")
@@ -34,6 +37,10 @@
             </iterate>
             <service-call name="mantle.ShipStation.ShipmentServices.get#OrderItemList"
                           in-map="[orderId:orderId,itemList:itemList]" out-map="orderItemList"/>
+            <service-call name="mantle.shipstation.OmsShipmentServices.ship#OrderItems"
+                          in-map="[orderId:orderId,orderPartSeqId:'01',shipDate:Shipping_date,
+                          itemList:itemList,carrier:carrier,trackingNumber:trackingNo,
+                          labelCreateDate:labelCreateDate,]"/>
         </actions>
     </service>
 
