@@ -10,8 +10,10 @@
             <parameter name="shipDate" type="Timestamp" default="ec.user.nowTimestamp"/>
             <parameter name="itemList" type="List" required="true">
                 <parameter name="itemMap" type="Map">
-                    <parameter name="orderItemList"/>
+                    <parameter name="sku"/>
                     <parameter name="quantity"/>
+                    <parameter name="lineItemId"/>
+                    <parameter name="orderItemSeqId"/>
                 </parameter>
             </parameter>
             <parameter name="trackingNumber" required="true"/>
@@ -23,7 +25,7 @@
         </out-parameters>
         <actions>
             <!-- create#OrderItemsShipment has transaction=cache so make it not init the tx cache with transaction=use-or-begin -->
-            <service-call name="mantle.shipstation.OmsShipmentService.create#OrderItemsShipment" out-map="context"
+            <service-call name="mantle.shipstation.OmsShipmentServices.create#OrderItemsShipment" out-map="context"
                           in-map="[orderId:orderId, orderPartSeqId:orderPartSeqId, createPackage:true, entryDate:shipDate,
                                    tryAutoPackage:tryAutoPackage, trackingNumber:trackingNumber, carrier:carrier, labelDate:labelDate]"/>
 
@@ -43,7 +45,6 @@
                                         quantity:item.quantity, shipmentId:shipmentId, shipmentPackageSeqId:shipmentPackageSeqId]"/>
                 </if>
             </iterate>
-
             <service-call name="mantle.shipment.ShipmentServices.pack#Shipment"
                           in-map="[shipmentId:shipmentId, packedDate:shipDate]"/>
 
@@ -64,8 +65,10 @@
             <parameter name="entryDate" type="Timestamp" default="ec.user.nowTimestamp"/>
             <parameter name="itemsList" type="List" required="true">
                 <parameter name="itemMap" type="Map">
-                    <parameter name="orderItemList"/>
+                    <parameter name="sku"/>
                     <parameter name="quantity"/>
+                    <parameter name="lineItemId"/>
+                    <parameter name="orderItemSeqId"/>
                 </parameter>
             </parameter>
             <parameter name="trackingNumber"/>
@@ -158,7 +161,7 @@
                     <set field="shippingGatewayConfigId" from="psShipGateway?.shippingGatewayConfigId"/>
                 </if>
             </if>
-            <if condition="!shippingGatewayConfigId &amp; &amp; orderPart.vendorPartId">
+            <if condition="!shippingGatewayConfigId &amp;&amp; orderPart.vendorPartyId">
                 <!-- if shipment.fromPartyId lookup setting there -->
                 <service-call name="mantle.party.PartyServices.get#PartySettingValue" out-map="ptySettingOut"
                               in-map="[partyId:orderPart.vendorPartyId, partySettingTypeId:'DefaultShipmentGatewayConfigId']"/>
@@ -183,7 +186,6 @@
                     <if condition="oiProduct.signatureRequiredEnumId &amp;&amp; oiProduct.signatureRequiredEnumId != 'PsrNone'">
                         <set field="signatureRequiredEnumId" from="oiProduct.signatureRequiredEnumId"/>
                         <break/>
-
                     </if>
                 </iterate>
             </if>
@@ -226,17 +228,16 @@
                             destPostalContactMechId:orderPart.postalContactMechId, destTelecomContactMechId:orderPart.telecomContactMechId,
                             originFacilityId:originFacilityId, destinationFacilityId:destinationFacilityId]"/>
             </if>
-
             <if condition="createPackage">
                 <service-call name="create#mantle.shipment.ShipmentPackage" in-map="context" out-map="context"/>
             </if>
-            <log message="===========================================context:${context}==================================="/>
+
             <if condition="shipmentPackageSeqId &amp;&amp; shipmentRouteSegmentSeqId">
                 <service-call name="create#mantle.shipment.ShipmentPackageRouteSeg"
                               in-map="[shipmentId:shipmentId, shipmentPackageSeqId:shipmentPackageSeqId,
                                 shipmentRouteSegmentSeqId:shipmentRouteSegmentSeqId, trackingCode:trackingNumber,labelDate:labelDate]"/>
             </if>
-            <service-call name="mantle.shipstation.OmsShipmentService.add#OrderItemsToShipment"
+            <service-call name="mantle.shipstation.OmsShipmentServices.add#OrderItemsToShipment"
                           in-map="[shipmentId:shipmentId, orderId:orderId, orderPartSeqId:orderPartSeqId, itemsList:itemsList]"/>
 
             <if condition="shippingGatewayConfigId &amp;&amp; tryAutoPackage &amp;&amp; !customerOrgInternal">
@@ -253,8 +254,10 @@
             <parameter name="shipmentId" required="true"/>
             <parameter name="itemsList" required="true" type="List">
                 <parameter name="itemMap" type="Map">
-                    <parameter name="orderItemList"/>
+                    <parameter name="sku"/>
                     <parameter name="quantity"/>
+                    <parameter name="lineItemId"/>
+                    <parameter name="orderItemSeqId"/>
                 </parameter>
             </parameter>
         </in-parameters>
@@ -263,7 +266,7 @@
             <if condition="!(shipment.statusId in ['ShipInput', 'ShipScheduled', 'ShipPicked'])">
                 <return error="true" message="Cannot add Order item to Shipment in status ${shipment.statusId}"/>
             </if>
-            <log message="==============================================shipment:${shipment}================================================="/>
+
 
             <entity-find-one entity-name="mantle.order.OrderPart" value-field="orderPart"/>
             <if condition="!(orderPart.statusId in ['OrderApproved','OrderSent'])">
@@ -281,10 +284,6 @@
                     <field-map field-name="orderId" from="orderId"/>
                     <field-map field-name="orderItemSeqId" from="item.orderItemSeqId"/>
                 </entity-find-one>
-                <!-- if no productId or not a product item type skip it -->
-                <if condition="!orderItem.productId || productItemTypes.contains(orderItem.itemTypeEnumId)">
-                    <continue/>
-                </if>
 
                 <!-- see if Product is a physical item -->
                 <entity-find-one entity-name="mantle.product.Product" value-field="product" cache="true">
@@ -307,7 +306,7 @@
                     <set field="quantityNotShipped" from="quantityNotShipped - existingSis.quantity"/>
                 </iterate>
 
-                <log message="===========================================existingSisList:${existingSisList}============================"/>
+
                 <set field="shipQuantity" from="item.quantity"/>
                 <!-- Right now only shipping item when shipQuantity is greater than quantityNotShipped, else return warning-->
                 <if condition="quantityNotShipped &lt;= 0">
@@ -331,7 +330,7 @@
                     </then>
                     <else>
                         <service-call name="create#mantle.shipment.ShipmentItem"
-                                      in-map="[shipmentId:shipmentId, productId:orderItem.productId, quantity:item.quantity]"/>
+                                      in-map="[shipmentId:shipmentId, productId:orderItem.productId, quantity:quantityNotShipped]"/>
                     </else>
                 </if>
 
@@ -364,12 +363,11 @@
 
                 <!-- create the ShipmentItemSource to associate the OrderItem with the Shipment -->
                 <service-call name="create#mantle.shipment.ShipmentItemSource"
-                              in-map="[shipmentId:shipmentId, productId:Item.productId, statusId:'SisPending',
+                              in-map="[shipmentId:shipmentId, productId:item.productId, statusId:'SisPending',
                             quantity:item.quantity, quantityNotHandled:item.quantity,
                             orderId:orderItem.orderId, orderItemSeqId:item.orderItemSeqId,
                             invoiceId:singleFullOib?.invoiceId, invoiceItemSeqId:singleFullOib?.invoiceItemSeqId]"/>
             </iterate>
         </actions>
     </service>
-
 </services>
