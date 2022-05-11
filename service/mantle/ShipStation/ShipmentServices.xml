@@ -22,7 +22,6 @@
                 <entity-find entity-name="mantle.product.Product" list="productInfo">
                     <econdition field-name="pseudoId" from="item.sku"/>
                 </entity-find>
-                <log message="=====================Product:${productInfo}==========================="/>
                 <entity-find entity-name="mantle.order.OrderItem" list="orderItemInfoList">
                     <econdition field-name="orderId" from="orderId"/>
                     <econdition field-name="itemTypeEnumId" value="ItemProduct"/>
@@ -30,7 +29,6 @@
                     <select-field field-name="orderId,orderItemSeqId,productId,itemDescription,quantity,
                                     unitAmount,itemTypeEnumId"/>
                 </entity-find>
-                <log message="=====================OrderItem:${orderItemInfoList}==========================="/>
             </iterate>
             <if condition="orderItemInfoList.isEmpty()">
                 <return error="true" message="Can't find item in this orderId ${orderId}"/>
@@ -38,8 +36,6 @@
             <script>
                 item.put("orderItemSeqId",orderItemInfoList[0].orderItemSeqId)
             </script>
-            <service-call name="mantle.ShipStation.ShipmentServices.get#OrderItemList"
-                          in-map="[orderId:orderId,itemList:itemList]" out-map="orderItemList"/>
         </actions>
     </service>
 </services>
