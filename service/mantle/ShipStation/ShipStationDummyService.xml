@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
+    <!-- This service will get data -->
+
+    <service verb="get" noun="Order">
+        <actions>
+            <script>
+                def response = ec.web.getResponse();
+                response.setContentType("application/xml")
+                Writer w = response.getWriter()
+                ec.resource.template("component://mantle-shipstation/screen/DummyData.xml.ftl",w)
+                w.flush()
+                w.close()
+            </script>
+        </actions>
+    </service>
+
+
+</services>

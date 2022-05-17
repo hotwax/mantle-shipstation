@@ -9,7 +9,7 @@
             <service name="mantle.ShipStation.ShipStationServices.get#OrderData"/>
         </method>
         <method type="post">
-            <service name="mantle.shipstation.ShipStationServices.post#ShipNotification"/>
+            <service name="mantle.ShipStation.ShipStationServices.post#ShipNotification"/>
         </method>
     </resource>
     <resource name="dummyOrder">
