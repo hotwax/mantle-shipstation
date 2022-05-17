@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
+
     <service verb="post" noun="ShipNotification">
         <in-parameters>
             <parameter name="order_number"/>
@@ -37,7 +38,7 @@
             </iterate>
             <service-call name="mantle.ShipStation.ShipmentServices.get#OrderItemList"
                           in-map="[orderId:orderId,itemList:itemList]" out-map="orderItemList"/>
-            <service-call name="mantle.shipstation.OmsShipmentServices.ship#OrderItems"
+            <service-call name="mantle.ShipStation.OmsShipmentServices.ship#OrderItems"
                           in-map="[orderId:orderId,orderPartSeqId:'01',shipDate:Shipping_date,
                           itemList:itemList,carrier:carrier,trackingNumber:trackingNo,
                           labelCreateDate:labelCreateDate,]"/>

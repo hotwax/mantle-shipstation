@@ -25,9 +25,9 @@
         </out-parameters>
         <actions>
             <!-- create#OrderItemsShipment has transaction=cache so make it not init the tx cache with transaction=use-or-begin -->
-            <service-call name="mantle.shipstation.OmsShipmentServices.create#OrderItemsShipment" out-map="context"
+            <service-call name="mantle.ShipStation.OmsShipmentServices.create#OrderItemsShipment" out-map="context"
                           in-map="[orderId:orderId, orderPartSeqId:orderPartSeqId, createPackage:true, entryDate:shipDate,
-                                   tryAutoPackage:tryAutoPackage, trackingNumber:trackingNumber, carrier:carrier, labelDate:labelDate]"/>
+                                   itemsList:itemList,tryAutoPackage:tryAutoPackage, trackingNumber:trackingNumber, carrier:carrier, labelDate:labelDate]"/>
 
             <entity-find entity-name="moqui.basic.EnumGroupMember" list="productItemTypeEgms" cache="true">
                 <econdition field-name="enumGroupEnumId" value="EngItemsProduct"/>
@@ -100,7 +100,7 @@
                 </entity-find-one>
 
                 <!-- if no productId or not a product item type skip it -->
-                <if condition="!orderItem.productId || productItemTypes.contains(orderItem.itemTypeEnumId)">
+                <if condition="!orderItem.productId || !productItemTypes.contains(orderItem.itemTypeEnumId)">
                     <continue/>
                 </if>
 
@@ -127,7 +127,7 @@
                     </if>
                 </iterate>
                 <!-- if no quantity not shipped skip the item and print warning -->
-                <if condition="quantityNotShipped &lt; = 0">
+                <if condition="quantityNotShipped &lt;= 0">
                     <log message="orderId:${orderId}, id:${item.orderItemSeqId} is already shipped." level="warn"/>
                     <continue/>
                 </if>
@@ -139,7 +139,7 @@
                 <field-map field-name="partyId" from="orderPart.customerPartyId"/>
                 <field-map field-name="roleTypeId" value="OrgInternal"/>
             </entity-find-one>
-            <set field="shipmentTypeEnumId" value="customerOrgInternal"/>
+            <set field="shipmentTypeEnumId" from="customerOrgInternal ? 'ShpTpPurchase' : 'ShpTpSales'"/>
             <if condition="orderPart.facilityId">
                 <if condition="customerOrgInternal">
                     <then>
@@ -151,7 +151,7 @@
                 </if>
             </if>
             <!-- get shippingGatewayConfigId from store, then vendor setting, then global -->
-            <if condition="!shippingGatewayConfigId &amp; &amp; orderHeader.productStoreId &amp; &amp; orderPart.carrierPartyId">
+            <if condition="!shippingGatewayConfigId &amp;&amp; orderHeader.productStoreId &amp;&amp; orderPart.carrierPartyId">
                 <entity-find-one entity-name="mantle.product.store.ProductStoreShippingGateway"
                                  value-field="psShipGateway">
                     <field-map field-name="productStoreId" from="orderHeader.productStoreId"/>
@@ -203,7 +203,7 @@
                     <if condition="productStoreProduct == null">
                         <continue/>
                     </if>
-                    <if condition="productStoreProduct.signatureRequiredEnumId &amp; &amp; productStoreProduct.signatureRequiredEnumId != 'PsrNone'">
+                    <if condition="productStoreProduct.signatureRequiredEnumId &amp;&amp; productStoreProduct.signatureRequiredEnumId != 'PsrNone'">
                         <set field="signatureRequiredEnumId" from="productStoreProduct.signatureRequiredEnumId"/>
                         <break/>
                     </if>
@@ -237,7 +237,7 @@
                               in-map="[shipmentId:shipmentId, shipmentPackageSeqId:shipmentPackageSeqId,
                                 shipmentRouteSegmentSeqId:shipmentRouteSegmentSeqId, trackingCode:trackingNumber,labelDate:labelDate]"/>
             </if>
-            <service-call name="mantle.shipstation.OmsShipmentServices.add#OrderItemsToShipment"
+            <service-call name="mantle.ShipStation.OmsShipmentServices.add#OrderItemsToShipment"
                           in-map="[shipmentId:shipmentId, orderId:orderId, orderPartSeqId:orderPartSeqId, itemsList:itemsList]"/>
 
             <if condition="shippingGatewayConfigId &amp;&amp; tryAutoPackage &amp;&amp; !customerOrgInternal">
@@ -284,6 +284,12 @@
                     <field-map field-name="orderId" from="orderId"/>
                     <field-map field-name="orderItemSeqId" from="item.orderItemSeqId"/>
                 </entity-find-one>
+
+                <!-- if no productId or not a product item type skip it-->
+                <if condition="!orderItem.productId || !productItemTypes.contains(orderItem.itemTypeEnumId)">
+                    <log message="============================orderItem.productId:${orderItem.productId},itemTypeEnumId:${orderItem.itemTypeEnumId} ===================================="/>
+                    <continue/>
+                </if>
 
                 <!-- see if Product is a physical item -->
                 <entity-find-one entity-name="mantle.product.Product" value-field="product" cache="true">
@@ -363,7 +369,7 @@
 
                 <!-- create the ShipmentItemSource to associate the OrderItem with the Shipment -->
                 <service-call name="create#mantle.shipment.ShipmentItemSource"
-                              in-map="[shipmentId:shipmentId, productId:item.productId, statusId:'SisPending',
+                              in-map="[shipmentId:shipmentId, productId:orderItem.productId, statusId:'SisPending',
                             quantity:item.quantity, quantityNotHandled:item.quantity,
                             orderId:orderItem.orderId, orderItemSeqId:item.orderItemSeqId,
                             invoiceId:singleFullOib?.invoiceId, invoiceItemSeqId:singleFullOib?.invoiceItemSeqId]"/>
