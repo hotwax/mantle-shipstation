@@ -2,6 +2,7 @@
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
 
+<!--     Shipping OrderItems -->
     <service verb="ship" noun="OrderItems">
         <in-parameters>
             <parameter name="orderId" required="true"/>
@@ -28,11 +29,9 @@
             <service-call name="mantle.ShipStation.OmsShipmentServices.create#OrderItemsShipment" out-map="context"
                           in-map="[orderId:orderId, orderPartSeqId:orderPartSeqId, createPackage:true, entryDate:shipDate,
                                    itemsList:itemList,tryAutoPackage:tryAutoPackage, trackingNumber:trackingNumber, carrier:carrier, labelDate:labelDate]"/>
-
             <entity-find entity-name="moqui.basic.EnumGroupMember" list="productItemTypeEgms" cache="true">
                 <econdition field-name="enumGroupEnumId" value="EngItemsProduct"/>
             </entity-find>
-
             <set field="productItemTypes" from="productItemTypeEgms*.enumId"/>
             <!-- pack all items (Creating ShipmentPackageContent and AssetIssuance records) -->
             <iterate list="itemList" entry="item">
@@ -52,6 +51,7 @@
             <service-call name="mantle.shipment.ShipmentServices.ship#Shipment" in-map="[shipmentId:shipmentId]"/>
         </actions>
     </service>
+
     <service verb="create" noun="OrderItemsShipment" transaction="cache">
         <in-parameters>
             <parameter name="orderId" required="true"/>
@@ -287,7 +287,6 @@
 
                 <!-- if no productId or not a product item type skip it-->
                 <if condition="!orderItem.productId || !productItemTypes.contains(orderItem.itemTypeEnumId)">
-                    <log message="============================orderItem.productId:${orderItem.productId},itemTypeEnumId:${orderItem.itemTypeEnumId} ===================================="/>
                     <continue/>
                 </if>
 
@@ -339,15 +338,12 @@
                                       in-map="[shipmentId:shipmentId, productId:orderItem.productId, quantity:quantityNotShipped]"/>
                     </else>
                 </if>
-
                 <entity-find entity-name="mantle.order.OrderItemBilling" list="orderItemBillingList">
                     <econdition field-name="orderId"/>
                     <econdition field-name="orderItemSeqId" from="item.orderItemSeqId"/>
                 </entity-find>
 
-
                 <!-- set shipmentId on existing OrderItemBilling records with no shipmentId (for billed before shipped, ie Invoice before Shipment) -->
-
                 <set field="quantityNotBilled"
                      from="(item.quantity != null ? item.quantity : 1.0) * (orderItem.selectedAmount ?: 1.0)"/>
                 <iterate list="orderItemBillingList" entry="orderItemBilling">

@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entity-facade-xml type="demo">
-    <shipstation.ShippingGatewayShipStation shippingGatewayConfigId="ShipStationDemo"
-                                            userId="" password=""
-                                            connectUrl="https://ssapi.shipstation.com/"/>
+    <shipstation.ShippingGatewayShipStation shippingGatewayConfigId="ShipStationDemo" userId=""
+                                            password="" connectUrl="https://ssapi.shipstation.com/"/>
 </entity-facade-xml>
 
