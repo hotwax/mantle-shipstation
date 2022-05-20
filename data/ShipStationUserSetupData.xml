@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="demo">
+
+    <!-- Demo User for ShipStation APIs: WilliamJohn -->
+    <mantle.party.Party partyId="WilliamJohn" partyTypeEnumId="PtyPerson">
+        <person firstName="William" lastName="John"/>
+        <moqui.security.UserAccount userId="WilliamJohn" username="william.john" userFullName="William John"
+                                    currentPassword="" passwordHashType="SHA-256" emailAddress="">
+            <groups userGroupId="ADMIN"/>
+            <groups userGroupId="SHIPSTATION_USERS"/>
+        </moqui.security.UserAccount>
+    </mantle.party.Party>
+</entity-facade-xml>
