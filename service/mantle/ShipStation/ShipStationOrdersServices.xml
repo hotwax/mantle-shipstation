@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
+
+<!--    For getting the order data from shipstation-->
+    <service verb="send" noun="ShipStationRequest">
+        <in-parameters>
+            <parameter name="shippingGatewayConfigId" required="true"/>
+            <parameter name="path" required="true"/>
+            <parameter name="methodType" required="true"/>
+            <parameter name="ordersList" type="List">
+                <parameter name="ordersMap" type="Map">
+                    <parameter name="orderId"/>
+                    <parameter name="statusId"/>
+                </parameter>
+            </parameter>
+        </in-parameters>
+        <out-parameters>
+            <parameter name="responseMap" type="Map" required="true"/>
+        </out-parameters>
+        <actions>
+            <entity-find-one entity-name="shipstation.ShippingGatewayShipStation" value-field="shipstationShippingConfig" cache="true"/>
+            <if condition="shipstationShippingConfig == null || !(shipstationShippingConfig.userId || shipstationShippingConfig.password)">
+                <log message="No shipping configuration found for shipstationShippingConfigId ${shipstationShippingConfigId} "/>
+                <return type="warning" error="true"
+                        message="No shipping configuration found for shipstationShippingConfigId ${shipstationShippingConfigId}"/>
+            </if>
+            <set field="responseMap" from="[:]"/>
+            <script><![CDATA[
+                  import org.moqui.util.RestClient;
+                  import groovy.json.JsonSlurper;
+                  def connectUrl = shipstationShippingConfig.connectUrl;
+                  if (!connectUrl.endsWith("/")) {
+                    connectUrl+="/";
+                    }
+                 connectUrl = connectUrl + path;
+                 RestClient restClient = ec.service.rest()
+                 restClient.method(methodType)
+                 restClient.uri(connectUrl)
+                 .basicAuth(shipstationShippingConfig.userId, shipstationShippingConfig.password)
+                 restClient.contentType("application/json")
+                 restClient.jsonObject(requestMap)
+                 RestClient.RestResponse restResponse = restClient.call()
+                 if (restResponse.statusCode < 200 || restResponse.statusCode > 300) {
+                    String errMsg = restResponse.text()
+                        ec.logger.error("ShipStationerror response (${restResponse.statusCode}): ${errMsg}")
+                        ec.message.addMessage("ShipStation API error")
+                        ec.message.addMessage(errMsg)
+                        return
+                    }
+                responseMap = restResponse.jsonObject()
+            ]]>
+            </script>
+<!--            Update the orderHeader set ExternalId-->
+            <if condition="!ordersList.isEmpty()">
+                <iterate list="ordersList" entry="order">
+                    <iterate list="responseMap.orders" entry="responseOrder">
+                        <if condition="order.orderId == responseOrder.orderKey">
+                            <service-call name="mantle.order.OrderServices.update#OrderHeader" in-map="[orderId:order.orderId,externalId:responseOrder.orderId]"/>
+                        </if>
+                    </iterate>
+                </iterate>
+            </if>
+        </actions>
+    </service>
+
+<!--    Get all the orders which are in the rang of start day and end day-->
+    <service verb="get" noun="Orders" authenticate="anonymous-all">
+        <out-parameters>
+            <parameter name="ordersList" type="List"/>
+        </out-parameters>
+        <actions>
+            <script>
+                import java.time.Instant;
+                import java.time.LocalDate;
+                import java.time.LocalDateTime;
+                import java.time.ZoneId;
+                import java.time.LocalTime;
+
+                <!-- Getting the local date-->
+                LocalDateTime localDate = LocalDateTime.now();
+                LocalDate today = LocalDate.now(ZoneId.systemDefault());
+                LocalDateTime endDate = localDate.toLocalDate().atTime(LocalTime.MAX);
+                LocalDateTime startDate = LocalDateTime.of(today, LocalTime.MIDNIGHT);
+                startZdt = ec.l10n.format(startDate,'yyyy-MM-dd HH:mm');
+                endZdt = ec.l10n.format(endDate,'yyyy-MM-dd HH:mm');
+            </script>
+            <set field="ordersList" from="[]"/>
+            <entity-find entity-name="mantle.order.OrderHeader" list="order_List">
+                <econdition field-name="statusId" value="OrderApproved"/>
+                <econdition field-name="externalId" from="null"/>
+                <econdition field-name="salesChannelEnumId" value="ScWeb"/>
+                <econditions combine="and">
+                    <econdition field-name="placedDate" operator="greater-equals" from="startZdt"/>
+                    <econdition field-name="placedDate" operator="less-equals" from="endZdt"/>
+                </econditions>
+            </entity-find>
+            <set field="ordersList" from="order_List"/>
+<!--            If ordersList is not empty-->
+            <if condition="!ordersList.isEmpty()">
+                <service-call name="mantle.ShipStation.ShipStationOrdersServices.send#ShipStationRequest"
+                              in-map="[shippingGatewayConfigId:'ShipStationDemo',path:'orders',methodType:'Get',ordersList:ordersList]" out-map="responseMap"/>
+            </if>
+        </actions>
+    </service>
+</services>
