@@ -22,7 +22,6 @@
                 <entity-find entity-name="mantle.product.Product" list="productInfo">
                     <econdition field-name="pseudoId" from="item.sku"/>
                 </entity-find>
-                <log message="=====================ProductID:${productInfo[0].productId}==========================="/>
                 <entity-find entity-name="mantle.order.OrderItem" list="orderItemInfoList">
                     <econdition field-name="orderId" from="orderId"/>
                     <econdition field-name="itemTypeEnumId" value="ItemProduct"/>
@@ -31,7 +30,6 @@
                                     unitAmount,itemTypeEnumId"/>
                 </entity-find>
             </iterate>
-            <log message="=====================OrderItem:${orderItemInfoList}==========================="/>
             <if condition="orderItemInfoList.isEmpty()">
                 <return error="true" message="Can't find item in this orderId ${orderId}"/>
             </if>
