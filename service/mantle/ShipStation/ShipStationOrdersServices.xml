@@ -54,7 +54,7 @@
             <if condition="!ordersList.isEmpty()">
                 <iterate list="ordersList" entry="order">
                     <iterate list="responseMap.orders" entry="responseOrder">
-                        <if condition="order.orderId == responseOrder.orderKey">
+                        <if condition="order.orderId == responseOrder.orderNumber">
                             <service-call name="mantle.order.OrderServices.update#OrderHeader" in-map="[orderId:order.orderId,externalId:responseOrder.orderId]"/>
                         </if>
                     </iterate>
