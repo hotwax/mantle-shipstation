@@ -1,5 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-2.1.xsd">
+    <service verb="get" noun="OrderData">
+        <in-parameters>
+            <parameter name="start_date" type="Timestamp" format="MM/dd/yyyy HH:mm">
+                <description>Find orders that are placed on this date or after this date</description>
+            </parameter>
+            <parameter name="end_date" type="Timestamp" format="MM/dd/yyyy HH:mm">
+                <description>Find orders that are placed on this date or before this date</description>
+            </parameter>
+        </in-parameters>
+        <actions>
+            <script>
+                def response = ec.web.getResponse();
+                def context =
+                ec.service.sync().name("co.hotwax.oms.OrderServices.find#Orders").parameters([statusId:'OrderApproved',
+                placedDateStart:ec.l10n.format(start_date,'yyyy-MM-dd HH:mm'),placedDateEnd:ec.l10n.format(end_date,'yyyy-MM-dd HH:mm')]).call()
+                orders = context.orders
+                response.setContentType("application/xml")
+                Writer w = response.getWriter()
+                ec.resource.template("component://mantle-shipstation/screen/OrderData.xml.ftl",w)
+                w.flush()
+                w.close()
+            </script>
+        </actions>
+    </service>
 
     <service verb="post" noun="ShipNotification">
         <in-parameters>
