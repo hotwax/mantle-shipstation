@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <entities xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/entity-definition-2.1.xsd">
 
-
+<!--    Entity definition to store API key and Secret key-->
+    <entity entity-name="ShippingGatewayShipStation" package="shipstation">
+        <field name="shippingGatewayConfigId" type="id" is-pk="true"/>
+        <field name="userId" type="text-medium" encrypt="true"><description>ShipStation userId (userName)</description></field>
+        <field name="password" type="text-medium" encrypt="true"><description>ShipStation password(password)</description></field>
+        <field name="connectUrl" type="text-medium"><description>ShipStation instance Url</description></field>
+        <seed-data>
+            <moqui.basic.Enumeration description="Shipping Gateway ShipStation" enumId="ShGtwyShipStation" enumTypeId="ShippingGatewayType"/>
+        </seed-data>
+    </entity>
 </entities>

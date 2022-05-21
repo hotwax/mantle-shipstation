@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- General Guideline Verbs: GET=find, POST=create, PUT=store (create or update), PATCH=update, DELETE=delete  -->
+
+<resource xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/rest-api-2.1.xsd" name="shipstation"
+          displayName="ShipStation APIs" version="1.0.0" description="APIs for ShipStation Integration">
+    <resource name="orders">
+        <method type="get">
+            <service name="mantle.ShipStation.ShipStationServices.get#OrderData"/>
+        </method>
+        <method type="post">
+            <service name="mantle.ShipStation.ShipStationServices.post#ShipNotification"/>
+        </method>
+    </resource>
+    <resource name="dummyOrder">
+        <method type="get">
+            <service name="mantle.shipstation.ShipStationDummyService.get#Order"/>
+        </method>
+    </resource>
+</resource>

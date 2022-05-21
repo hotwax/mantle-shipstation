@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entity-facade-xml type="seed-initial">
+    <moqui.service.job.ServiceJob jobName="get_orders_from_database" description="Get all the orders from Database"
+                                  serviceName="mantle.ShipStation.ShipStationOrdersServices.get#Orders" cronExpression="0 0 */3 ? * *"
+                                  paused="N">
+    </moqui.service.job.ServiceJob>
+</entity-facade-xml>
