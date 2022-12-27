@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<entity-facade-xml type="demo">
+    <mantle.shipment.ShipmentBoxType shipmentBoxTypeId="USPS_FlatRateEnvelope" description="USPS Flat Rate Envelope"
+                                     dimensionUomId="LEN_in" boxLength="12.50" boxWidth="9.50" boxHeight="0.75" gatewayBoxId="FlatRateEnvelope"/>
+    <mantle.shipment.ShipmentBoxType shipmentBoxTypeId="USPS_MediumFlatRateBox" description="USPS Medium Flat Rate Box"
+                                     dimensionUomId="LEN_in" boxLength="14.00" boxWidth="12.00" boxHeight="3.50" gatewayBoxId="MediumFlatRateBox"/>
+    <mantle.shipment.ShipmentBoxType shipmentBoxTypeId="UPS_Express_Envelope" description="UPS Express Envelope"
+                                     dimensionUomId="LEN_in" boxLength="12.50" boxWidth="9.50" boxHeight="2.00" gatewayBoxId="Express_Envelope"/>
+    <mantle.shipment.ShipmentBoxType shipmentBoxTypeId="UPS_Express_Box_Medium" description="UPS Express Box Medium"
+                                     dimensionUomId="LEN_in" boxLength="15.00" boxWidth="11.00" boxHeight="3.00" gatewayBoxId="Express_Box_Medium"/>
+
+    <mantle.shipment.carrier.ShippingGatewayConfig shippingGatewayConfigId="SHIP_STATION_DEMO"
+                                                   shippingGatewayTypeEnumId="ShGtwyShipStation" description="ShipStation API Demo"
+                                                   getRateServiceName="mantle.ShipStation.ShipStationServices.get#ShippingRates">
+        <carriers carrierPartyId="UPS" gatewayAccountId=""/>
+        <carriers carrierPartyId="USPS" gatewayAccountId=""/>
+
+        <options optionEnumId="SgoApiToken" optionValue="MzI4Njc2OGQzNTVhNDhmMDgwNmI4MzNkZGY5MmYwZjQ6ODEyZjhjNmM1NWEzNDI4MmJhZTJiY2U4YWYzMTFjMjY="/>
+
+        <methods carrierPartyId="USPS" shipmentMethodEnumId="ShMthGround" gatewayServiceCode="usps_first_class_mail"/>
+        <methods carrierPartyId="UPS" shipmentMethodEnumId="ShMthGround" gatewayServiceCode="ups_ground"/>
+        <methods carrierPartyId="UPS" shipmentMethodEnumId="ShMthNextDay" gatewayServiceCode="ups_next_day_air"/>
+        <boxTypes shipmentBoxTypeId="USPS_FlatRateEnvelope" gatewayBoxId="FlatRateEnvelope"/>
+        <boxTypes shipmentBoxTypeId="USPS_MediumFlatRateBox" gatewayBoxId="MediumFlatRateBox"/>
+        <boxTypes shipmentBoxTypeId="UPS_Express_Envelope" gatewayBoxId="Express_Envelope"/>
+        <boxTypes shipmentBoxTypeId="UPS_Express_Box_Medium" gatewayBoxId="Express_Box_Medium"/>
+
+    </mantle.shipment.carrier.ShippingGatewayConfig>
+    <moqui.security.UserGroupPreference userGroupId="ALL_USERS" preferenceKey="ValidateAddressGatewayConfigId"
+                                        preferenceValue="SHIP_STATION_DEMO"/>
+
+    <moqui.security.UserGroupPreference userGroupId="ALL_USERS" preferenceKey="DefaultShipmentGatewayConfigId"
+                                        preferenceValue="SHIP_STATION_DEMO"/>
+
+    <mantle.party.PartySetting partyId="ORG_ZIZI_RETAIL" partySettingTypeId="ValidateAddressGatewayConfigId" settingValue="SHIP_STATION_DEMO"/>
+    <mantle.party.PartySetting partyId="ORG_ZIZI_RETAIL" partySettingTypeId="DefaultShipmentGatewayConfigId" settingValue="SHIP_STATION_DEMO"/>
+
+    <mantle.product.store.ProductStore productStoreId="POPC_DEFAULT">
+        <shipOptions carrierPartyId="USPS" shipmentMethodEnumId="ShMthGround" />
+        <shipOptions carrierPartyId="UPS" shipmentMethodEnumId="ShMthNextDay" />
+    </mantle.product.store.ProductStore>
+
+</entity-facade-xml>
