@@ -32,7 +32,10 @@ tasks.withType(GroovyCompile) { options.compilerArgs << "-proc:none" }
 dependencies {
     implementation project(':framework')
     //mySql Database jar
-    runtimeOnly 'mysql:mysql-connector-java:8.0.30'}
+    runtimeOnly 'mysql:mysql-connector-java:8.0.30'
+    implementation 'org.apache.pdfbox:pdfbox:2.0.1'
+
+}
 
 // by default the Java plugin runs test on build, change to not do that (only run test if explicit task)
 // no longer words as of gradle 4.8 or possibly earlier, use clear() instead: check.dependsOn.remove(test)
