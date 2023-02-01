@@ -18,7 +18,7 @@
         <carriers carrierPartyId="UPS" gatewayAccountId=""/>
         <carriers carrierPartyId="USPS" gatewayAccountId=""/>
 
-        <options optionEnumId="SgoApiToken" optionValue="MGJlZDZlODgxMDRjNGVjMmE3ZTUwYjhlNjMyOGQ4OWU6MGVmYzVjYTFhNDU2NDEyZGE5OWJmYjM0ZjNmOGRkYzI="/>
+        <options optionEnumId="SgoApiToken" optionValue=""/>
 
         <methods carrierPartyId="USPS" shipmentMethodEnumId="ShMthGround" gatewayServiceCode="usps_first_class_mail"/>
         <methods carrierPartyId="UPS" shipmentMethodEnumId="ShMthGround" gatewayServiceCode="ups_ground"/>
