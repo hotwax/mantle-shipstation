@@ -31,9 +31,10 @@ tasks.withType(GroovyCompile) { options.compilerArgs << "-proc:none" }
 
 dependencies {
     implementation project(':framework')
-    //mySql Database jar
-    runtimeOnly 'mysql:mysql-connector-java:8.0.30'
-    implementation 'org.apache.pdfbox:pdfbox:2.0.1'
+    //mySql Database jar - uncomment when using MySql 8
+    //runtimeOnly 'mysql:mysql-connector-java:8.0.30'
+    //apache Pdfbox jar - uncomment when using pdfbox 2
+    //implementation 'org.apache.pdfbox:pdfbox:2.0.1'
 
 }
 
