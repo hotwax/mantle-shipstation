@@ -23,11 +23,6 @@
         <methods carrierPartyId="USPS" shipmentMethodEnumId="ShMthGround" gatewayServiceCode="usps_first_class_mail"/>
         <methods carrierPartyId="UPS" shipmentMethodEnumId="ShMthGround" gatewayServiceCode="ups_ground"/>
         <methods carrierPartyId="UPS" shipmentMethodEnumId="ShMthNextDay" gatewayServiceCode="ups_next_day_air"/>
-        <boxTypes shipmentBoxTypeId="USPS_FlatRateEnvelope" gatewayBoxId="flat_rate_envelope"/>
-        <boxTypes shipmentBoxTypeId="USPS_MediumFlatRateBox" gatewayBoxId="medium_flat_rate_box"/>
-        <boxTypes shipmentBoxTypeId="UPS_Express_Envelope" gatewayBoxId="express_envelope"/>
-        <boxTypes shipmentBoxTypeId="UPS_Express_Box_Medium" gatewayBoxId="express_box_medium"/>
-        <boxTypes shipmentBoxTypeId="USPS_LargeVideoFlatRateBox" gatewayBoxId="package"/>
 
     </mantle.shipment.carrier.ShippingGatewayConfig>
     <moqui.security.UserGroupPreference userGroupId="ALL_USERS" preferenceKey="ValidateAddressGatewayConfigId"
@@ -41,6 +36,7 @@
 
     <mantle.product.store.ProductStore productStoreId="POPC_DEFAULT">
         <shipOptions carrierPartyId="USPS" shipmentMethodEnumId="ShMthGround" />
+        <shipOptions carrierPartyId="UPS" shipmentMethodEnumId="ShMthGround" />
         <shipOptions carrierPartyId="UPS" shipmentMethodEnumId="ShMthNextDay" />
     </mantle.product.store.ProductStore>
 
