@@ -18,7 +18,7 @@
                 <field-map field-name="shippingGatewayConfigId"/>
                 <field-map field-name="optionEnumId" value="SgoApiToken"/>
             </entity-find-one>
-            <if condition="!apiTokenOpt">
+            <if condition="!apiTokenOpt || !apiTokenOpt.optionValue">
                 <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, not requesting Shipping rates"/>
             </if>
 
@@ -45,6 +45,8 @@
             <if condition="!shipmentMethodEnumId">
                 <log level="warn" message="Shipment method not set on shipment ${shipmentId}:${shipmentRouteSegmentSeqId}"/>
             </if>
+
+            <!-- ~~~~~~~~~~~~~ Service Code ~~~~~~~~~~~~~~~~ -->
 
             <entity-find-one entity-name="mantle.shipment.carrier.ShippingGatewayMethod" value-field="gatewayMethod">
                 <field-map field-name="shippingGatewayConfigId"/>
@@ -104,10 +106,8 @@
             <if condition="!destStateGeo.geoCodeAlpha2">
                 <if condition="routeSegment.carrierPartyId=='UPS'">
                     <return error="true" message="State Province is not found for ContactMechId: ${routeSegment.destPostalContactMechId}"/>
-                    <else>
-                        <log level="warn" message="State Province is not found for ContactMechId: ${routeSegment.destPostalContactMechId}"/>
-                    </else>
                 </if>
+                <log level="warn" message="State Province is not found for ContactMechId: ${routeSegment.destPostalContactMechId}"/>
             </if>
             <if condition="!destPostalAddress.postalCode">
                 <return error="true" message="Destination Postal code is not found for ContactMechId: ${routeSegment.destPostalContactMechId}"/>
@@ -122,7 +122,7 @@
             <if condition="!shipmentPackage">
                 <return error="true" message="Any package not set on shipment ${shipmentId}:${shipmentPackageSeqId}"/>
             </if>
-            <if condition="!shipmentPackage.weightUomId">
+            <if condition="!shipmentPackage.weightUomId || !shipmentPackage.weight">
                 <return error="true" message="Weight or WeightUomId not set for Shipment Package ${shipmentId}:${shipmentPackageSeqId}"/>
             </if>
 
@@ -155,7 +155,7 @@
                     <set field="carrierCode" value="ups_walleted"/>
                 </else-if>
                 <else>
-                    <set field="carrierCode" value="routeSegment.carrierPartyId"/>
+                    <set field="carrierCode" from="routeSegment.carrierPartyId"/>
                 </else>
             </if>
 
@@ -203,8 +203,8 @@
                 <field-map field-name="shippingGatewayConfigId"/>
                 <field-map field-name="optionEnumId" value="SgoApiToken"/>
             </entity-find-one>
-            <if condition="!apiTokenOpt">
-                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, not requesting Shipping rates"/>
+            <if condition="!apiTokenOpt || !apiTokenOpt.optionValue">
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, not requesting create ShippingLabel"/>
             </if>
             <!--~~~~~~~~~~~~~ shipment:routeSegment ~~~~~~~~~~~~~-->
 
@@ -232,6 +232,8 @@
                 <return error="true" message="Shipment method not set on shipment ${shipmentId}:${shipmentRouteSegmentSeqId}"/>
             </if>
 
+            <!-- ~~~~~~~~~~~~~ Service Code ~~~~~~~~~~~~~~~~ -->
+
             <entity-find-one entity-name="mantle.shipment.carrier.ShippingGatewayMethod" value-field="gatewayMethod">
                 <field-map field-name="shippingGatewayConfigId"/>
                 <field-map field-name="carrierPartyId" from="routeSegment.carrierPartyId"/>
@@ -239,13 +241,9 @@
             </entity-find-one>
 
             <if condition="!gatewayMethod">
-                <then>
-                    <return error="true" message="Gateway method ${shipmentMethodEnumId} not set on for ${shippingGatewayConfigId}"/>
-                </then>
-                <else>
-                    <set field="serviceCode" from="gatewayMethod.gatewayServiceCode"/>
-                </else>
+                <return error="true" message="Gateway method ${shipmentMethodEnumId} not set on for ${shippingGatewayConfigId}"/>
             </if>
+            <set field="serviceCode" from="gatewayMethod.gatewayServiceCode"/>
 
 
             <!--~~~~~~~~~~~~~ Address From ~~~~~~~~~~~~~~~~-->
@@ -351,7 +349,7 @@
             <if condition="!shipmentPackage">
                 <return error="true" message="Any package not set on shipment ${shipmentId}:${shipmentPackageSeqId}"/>
             </if>
-            <if condition="!shipmentPackage.weightUomId">
+            <if condition="!shipmentPackage.weightUomId || !shipmentPackage.weight">
                 <return error="true" message="Weight or WeightUomId not set for Shipment Package ${shipmentId}:${shipmentPackageSeqId}"/>\
             </if>
 
@@ -384,7 +382,7 @@
                     <set field="carrierCode" value="ups_walleted"/>
                 </else-if>
                 <else>
-                    <set field="carrierCode" value="routeSegment.carrierPartyId"/>
+                    <set field="carrierCode" from="routeSegment.carrierPartyId"/>
                 </else>
             </if>
             <set field="requestMap" from="[carrierCode:carrierCode,serviceCode:serviceCode,packageCode:packageCode,confirmation:'delivery',shipDate:shipDate,
@@ -457,8 +455,8 @@
                 <field-map field-name="shippingGatewayConfigId" />
                 <field-map field-name="optionEnumId" value="SgoApiToken"/>
             </entity-find-one>
-            <if condition="!apiTokenOpt">
-                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, not requesting Shipping rates"/>
+            <if condition="!apiTokenOpt || !apiTokenOpt.optionValue">
+                <return error="true" message="Shipping gateway ${shippingGatewayConfigId} has no Authorization, not requesting void ShippingLabel"/>
             </if>
             <!-- ~~~~~~~~~~~~~ shipment:routeSegment:package ~~~~~~~~~~~~~ -->
             <entity-find-one entity-name="mantle.shipment.Shipment" value-field="shipment" />

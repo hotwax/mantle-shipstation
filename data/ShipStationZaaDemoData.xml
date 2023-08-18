@@ -25,13 +25,10 @@
         <methods carrierPartyId="UPS" shipmentMethodEnumId="ShMthNextDay" gatewayServiceCode="ups_next_day_air"/>
 
     </mantle.shipment.carrier.ShippingGatewayConfig>
-    <moqui.security.UserGroupPreference userGroupId="ALL_USERS" preferenceKey="ValidateAddressGatewayConfigId"
-                                        preferenceValue="SHIP_STATION_DEMO"/>
 
     <moqui.security.UserGroupPreference userGroupId="ALL_USERS" preferenceKey="DefaultShipmentGatewayConfigId"
                                         preferenceValue="SHIP_STATION_DEMO"/>
 
-    <mantle.party.PartySetting partyId="ORG_ZIZI_RETAIL" partySettingTypeId="ValidateAddressGatewayConfigId" settingValue="SHIP_STATION_DEMO"/>
     <mantle.party.PartySetting partyId="ORG_ZIZI_RETAIL" partySettingTypeId="DefaultShipmentGatewayConfigId" settingValue="SHIP_STATION_DEMO"/>
 
     <mantle.product.store.ProductStore productStoreId="POPC_DEFAULT">
