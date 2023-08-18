@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<entity-facade-xml type="seed">
+    <moqui.basic.Enumeration description="Ship Station REST API" enumId="ShGtwyShipStation" enumTypeId="ShippingGatewayType"/>
+    <moqui.basic.Enumeration description="Ship Station Gateway Options" enumId="ShipStationOption" enumTypeId="EnumGroup"/>
+    <moqui.basic.EnumGroupMember enumGroupEnumId="ShipStationOption" enumId="SgoApiToken" sequenceNum="1"/>
+</entity-facade-xml>
